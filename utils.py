@@ -7,9 +7,16 @@ import numpy as np
 from PIL import Image
 
 
-def get_frames(video_path):
+def get_frames(video_path, frame_limit=16, step=1):
     video = mmcv.VideoReader(video_path)
-    frames = [Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)) for frame in video]
+    frames = []
+    counter = 0
+    for i, frame in enumerate(video):
+        if counter == frame_limit:
+            break
+        if i % step == 0:
+            frames.append(Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)))
+        counter += 1
     return frames
 
 
