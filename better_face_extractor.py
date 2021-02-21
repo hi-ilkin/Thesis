@@ -7,11 +7,11 @@ from facenet_pytorch import MTCNN
 
 from utils import get_frames
 
-mtcnn = MTCNN(margin=40, keep_all=True, post_process=False, device='cuda')
+mtcnn = MTCNN(image_size=224, margin=20, min_face_size=60, keep_all=True, post_process=False, device='cuda')
 
-video_paths = glob.glob(r'E:\Thesis\Thesis\data\dfdc_train_part_48\*.mp4')
-metadata = json.load(open(r'E:\Thesis\Thesis\data\dfdc_train_part_48\metadata.json', 'r'))
-batch_size = 96
+video_paths = glob.glob(r'train_sample_videos\*.mp4')
+metadata = json.load(open(r'train_sample_videos\metadata.json', 'r'))
+batch_size = 128
 
 if not os.path.exists('faces'):
     os.mkdir('faces')
@@ -33,8 +33,7 @@ for p in video_paths[:1]:
 
         batch = frames[i:i + batch_size]
         batch_save_path = save_paths[i:i + batch_size]
-        mtcnn(batch, save_path=batch_save_path)
-
+        res = mtcnn.detect(batch)
         batch_processing_times.append(time.time() - t)
 
     print(
