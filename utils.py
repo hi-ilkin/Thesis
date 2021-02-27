@@ -62,3 +62,15 @@ def save_video(frames, input_path, fourcc=cv2.VideoWriter_fourcc(*'MP4V'), fps=3
     video_writer.release()
 
     print(f"{video_name} saved to {output_path}")
+
+
+def display(images, names=None):
+    if names is None:
+        names = [f'image-{i}' for i in range(len(images))]
+    for image, name in zip(images, names):
+        cv2.imshow(name, image)
+
+    q = cv2.waitKey(0)
+    if q == ord('q'):
+        exit(-1)
+    cv2.destroyAllWindows()
