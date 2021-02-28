@@ -11,6 +11,7 @@ import face_recognition
 from collections import Counter
 from PIL import Image
 
+import config
 from utils import display
 
 random.seed(1)
@@ -58,8 +59,6 @@ def cluster(paths_to_images):
 
 
 def save_clusters(cluster_labels, paths_to_images):
-    if not os.path.exists('clusters'):
-        os.mkdir('clusters')
 
     clusters = {}
     name = f'{os.path.basename(paths_to_images[0])}'
@@ -94,14 +93,15 @@ def save_clusters(cluster_labels, paths_to_images):
             v.extend([empty_image for _ in range(max_size - len(v))])
         rows.append(np.hstack(v))
 
-    cv2.imwrite(f'clusters/{name}', np.vstack(rows))
+    cv2.imwrite(f'{config.DIR_CLUSTERS}/{name}', np.vstack(rows))
 
 
 if __name__ == '__main__':
     # folders = ['bvzjkezkms.mp4', 'bsqgziaylx.mp4'] + [random.choice(os.listdir('faces')) for _ in range(5)]
-    folders = os.listdir('faces')
-    for folder in folders:
+    folders = os.listdir(config.FACE_IMAGES)
+    for i, folder in enumerate(folders):
         if folder.endswith('mp4'):
-            print(folder)
-            paths = [p for p in glob.glob(f'faces/{folder}/*.jpg') if not p.endswith('mean_face.jpg')]
+            if i % 100 == 0:
+                print(f'{i+1}/{len(folders)} processed')
+            paths = [p for p in glob.glob(f'{config.FACE_IMAGES}/{folder}/*.jpg') if not p.endswith('mean_face.jpg')]
             cluster(paths)

@@ -127,7 +127,7 @@ def extract_faces_using_coordinates(name):
         face_output = f'{config.FACE_IMAGES}/{name}'
 
         if not os.path.exists(face_output):
-            os.mkdir(face_output)
+            os.makedirs(face_output)
 
         for frame_id, frame in enumerate(frames):
             if faces.get(str(frame_id), None) is None:
