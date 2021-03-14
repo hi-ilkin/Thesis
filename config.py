@@ -3,7 +3,7 @@ import os
 VIDEO_PATH = r'D:\DFDC\dfdc_train_part_48\*.mp4'
 METADATA_PATH = r'D:\DFDC\dfdc_train_part_48\metadata.json'
 
-FACE_COORDINATES_PATH = 'data/face_coordinates_48.json'
+FACE_COORDINATES_PATH = 'data/face_coordinates_48_higher_th.json'
 FACE_IMAGES = 'outputs/faces_48'
 DIR_CLUSTERS = 'outputs/clusters_48'
 

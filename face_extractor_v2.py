@@ -20,8 +20,13 @@ from utils import get_frames, save_video
 video_paths = {os.path.basename(f): f for f in glob.glob(config.VIDEO_PATH)}
 metadata = pd.read_json(config.METADATA_PATH).T
 
-mtcnn = MTCNN(image_size=300, margin=20, min_face_size=60, keep_all=True, post_process=False, device='cuda:0')
+mtcnn = MTCNN(image_size=300, margin=20,
+              keep_all=True,
+              min_face_size=60,
+              thresholds=[0.85, 0.95, 0.95],
+              post_process=False, device='cuda:0')
 frames_pool = {}
+
 
 def extract_frames(video_names):
     global frames_pool
@@ -147,7 +152,7 @@ def extract_face_coordinates_from_original_videos():
 
 
 if __name__ == '__main__':
-    # extract_face_coordinates_from_original_videos()
+    extract_face_coordinates_from_original_videos()
 
-    with Pool(4) as pool:
-        pool.map(extract_faces_using_coordinates, video_paths.keys())
+    # with Pool(4) as pool:
+    #     pool.map(extract_faces_using_coordinates, video_paths.keys())
