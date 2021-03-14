@@ -1,10 +1,13 @@
 import os
 import json
+import time
+from multiprocessing import Pool
 
 import cv2
 import mmcv
 import numpy as np
 from PIL import Image
+from functools import wraps
 
 
 def get_frames(video_path, frame_limit=16, step=1):
@@ -74,3 +77,24 @@ def display(images, names=None):
     if q == ord('q'):
         exit(-1)
     cv2.destroyAllWindows()
+
+
+def timeit(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        t = time.perf_counter()
+        result = func(*args, **kwargs)
+        print(f"Function {func.__name__} completed in {time.perf_counter() - t:.3f} seconds.")
+        return result
+
+    return wrapper
+
+@timeit
+def run_in_parallel(func, args):
+    results = []
+    with Pool(processes=os.cpu_count() - 1) as pool:
+        for item in args:
+            result = pool.apply_async(func, (item,))
+            results.append(result)
+
+        return [result.get() for result in results]
