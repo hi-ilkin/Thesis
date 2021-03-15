@@ -1,15 +1,14 @@
+import glob
 import json
 import math
 import os
-import numpy as np
 import pandas as pd
 
-from multiprocessing import Process, Pool
 from ipywidgets import Video
 from sklearn.cluster import AgglomerativeClustering
 
 import config
-from utils import get_frames, timeit, run_in_parallel
+from utils import get_frames, timeit, run_in_parallel, extract_box
 
 face_coordinates = pd.read_json(config.FACE_COORDINATES_PATH).T
 
@@ -30,14 +29,17 @@ class Metadata:
         return self.metadata[self.metadata['label'] == 'REAL']
 
 
+metadata = Metadata()
+
+
 class VideoReader:
-    def __init__(self, name, face_coordinates):
-        metadata = Metadata()
+    def __init__(self, name):
+
+        self.frame_ids = []
         self.name = name
         self.path = os.path.join(os.path.dirname(config.VIDEO_PATH), name)
-        self.label = metadata[name][0]
-        self.original = metadata[name][1]
-        self.frames = get_frames(self.path)
+        self.label, self.original = metadata[name]
+        self.frames = get_frames(self.path, output_type='PIL')
         self.face_centers = []
         self.cluster_labels = []
 
@@ -83,6 +85,7 @@ class VideoReader:
             for face in frame:
                 self.face_centers.append([(face[0] + face[2]) / 2,
                                           (face[1] + face[3]) / 2])
+                self.frame_ids.append(i)
 
     def _cluster(self, threshold=100, linkage='average'):
         if len(self.face_centers) == 0:
@@ -107,12 +110,22 @@ class VideoReader:
         else:
             faces = self.flatten_face_coordinates()
 
-        for label, face in zip(self.cluster_labels, faces):
+        for frame_id, label, face in zip(self.frame_ids, self.cluster_labels, faces):
             label = int(label)
             if clusters.get(label, None) is None:
                 clusters[label] = []
-            clusters[label].append(face)
+            clusters[label].append((frame_id, face))
         return clusters
+
+    def extract_faces(self):
+        for coordinates in self.coordinates:
+            try:
+                for i, (frame_id, face) in enumerate(coordinates):
+                    extract_box(self.frames[frame_id], face, f'{config.FACE_IMAGES}/{self.name}_{frame_id}_{i}.jpg')
+            except Exception as e:
+                if math.isnan(coordinates):
+                    continue
+                print(f'Problem with {self.name} : {e}')
 
     def play(self):
         """
@@ -136,13 +149,18 @@ def process_clusters(clusters):
 
 
 def run(name):
-    video = VideoReader(name, face_coordinates)
+    video = VideoReader(name)
     clusters = process_clusters(video.cluster_faces())
     return {name: clusters}
 
 
-if __name__ == '__main__':
-
+def clean_face_coordinates():
+    """
+    - Cluster faces using face centers
+    - Keep single clusters
+    - Remove clusters with less than 10 items
+    - Save new face coordinates
+    """
     results = run_in_parallel(run, face_coordinates.index)
     cleaned_faces_path = os.path.dirname(config.FACE_COORDINATES_PATH) + '/cleaned_faces_48_higher_th.json'
 
@@ -151,3 +169,34 @@ if __name__ == '__main__':
         cleaned_faces.update(res)
     with open(cleaned_faces_path, 'w') as f:
         json.dump(cleaned_faces, f)
+
+
+def _run(name):
+    video = VideoReader(name)
+    video.extract_faces()
+    return None
+
+
+def run_face_extraction():
+    videos = [os.path.basename(f) for f in glob.glob(config.VIDEO_PATH)]
+    run_in_parallel(_run, videos)
+
+
+@timeit
+def prepare_labels():
+    face_images = [os.path.basename(f) for f in glob.glob(config.FACE_IMAGES + '/*.jpg')]
+    labels = {}
+
+    for i, f in enumerate(face_images):
+        if (i+1) % 1000 == 0:
+            print(f"{i + 1}/{len(face_images)}")
+        name = f.split('_')[0]
+        labels[f] = metadata[name][0]
+
+    pd.DataFrame(labels.items(), columns=['name', 'label']).to_csv('labels.csv', index=False)
+
+
+if __name__ == '__main__':
+    # clean_face_coordinates()
+    # run_face_extraction()
+    prepare_labels()
