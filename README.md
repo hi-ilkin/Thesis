@@ -10,3 +10,10 @@
 - [Facenet-pytorch](https://github.com/timesler/facenet-pytorch)
 
 
+### Known Problems
+n (such as opencv-python-headless, opencv-python, opencv-contrib-python or opencv-contrib-python-headless) installed 
+in your Python environment, you can force Albumentations installation with following command:
+
+```shell script
+pip install -U albumentations --no-binary imgaug,albumentations
+```

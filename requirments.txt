@@ -6,3 +6,4 @@ torch
 facenet-pytorch==2.5.1
 mmcv==1.2.6
 timm==0.3.2
+albumentations=0.5.2
