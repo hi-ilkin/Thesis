@@ -1,5 +1,4 @@
 import os
-import json
 import time
 from multiprocessing import Pool
 
@@ -10,7 +9,26 @@ from PIL import Image
 from functools import wraps
 
 
-def get_frames(video_path, frame_limit=16, step=1):
+def timeit(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        t = time.perf_counter()
+        result = func(*args, **kwargs)
+        print(f"Function {func.__name__} completed in {time.perf_counter() - t:.3f} seconds.")
+        return result
+
+    return wrapper
+
+
+def get_frames(video_path, frame_limit=16, step=1, output_type='CV'):
+    """
+    samples given amount of frames with given frequency either in opencv of PIL Image format
+    :param video_path: path to video
+    :param frame_limit: number of frames to be returned, default : 16
+    :param step: sampling frequency, default 1
+    :param output_type: 'CV' or 'PIL' type of output image
+    :return: list of images
+    """
     video = mmcv.VideoReader(video_path)
     frames = []
     counter = 0
@@ -18,7 +36,10 @@ def get_frames(video_path, frame_limit=16, step=1):
         if counter == frame_limit:
             break
         if i % step == 0:
-            frames.append(Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)))
+            if output_type == 'PIL':
+                frames.append(Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)))
+            elif output_type == 'cv':
+                frames.append(frame)
         counter += 1
     return frames
 
@@ -37,10 +58,6 @@ def get_frames_with_cv(video_path, convert_bgr=False):
         frames.append(frame)
 
     return frames
-
-
-def get_metadata():
-    return json.load(open('data/dfdc_train_part_48/metadata.json', 'r'))
 
 
 def save_video(frames, input_path, fourcc=cv2.VideoWriter_fourcc(*'MP4V'), fps=30, output_size=None,
@@ -79,18 +96,29 @@ def display(images, names=None):
     cv2.destroyAllWindows()
 
 
-def timeit(func):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        t = time.perf_counter()
-        result = func(*args, **kwargs)
-        print(f"Function {func.__name__} completed in {time.perf_counter() - t:.3f} seconds.")
-        return result
+def extract_box(image, coordinates, output_path=None):
+    """
+    Extracts given coordinates from an image and saves
+    :param image: input image
+    :param coordinates: coordinates of box.
+    :param output_path: (Optional) path to save image
+    :return: extracted image, if output_path is not provided
+    """
+    crop = image.crop(coordinates)
+    if output_path is not None:
+        crop.save(output_path)
+    return crop
 
-    return wrapper
 
 @timeit
 def run_in_parallel(func, args):
+    """
+    Runs given function for each of the items in the argument list in parallel.
+    Gathers all results and returns
+    :param func: Function to run in parallel. Should return a value
+    :param args: List of items to pass function
+    :return: Results of all runs
+    """
     results = []
     with Pool(processes=os.cpu_count() - 1) as pool:
         for item in args:
