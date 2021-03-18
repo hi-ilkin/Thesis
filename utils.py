@@ -29,6 +29,18 @@ def get_frames(video_path, frame_limit=16, step=1, output_type='CV'):
     :param output_type: 'CV' or 'PIL' type of output image
     :return: list of images
     """
+
+    # TODO: Implement optimized way for frame access:
+    '''
+    capture = cv.VideoCapture(movie_path)
+    for i in range(0, num_frames):
+        ret = capture.grab()
+        if i % 10 == 0:
+            ret, frame = capture.retrieve()
+            # do something with frame
+    capture.release()
+    '''
+
     video = mmcv.VideoReader(video_path)
     frames = []
     counter = 0
@@ -38,7 +50,7 @@ def get_frames(video_path, frame_limit=16, step=1, output_type='CV'):
         if i % step == 0:
             if output_type == 'PIL':
                 frames.append(Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)))
-            elif output_type == 'cv':
+            elif output_type == 'CV':
                 frames.append(frame)
         counter += 1
     return frames
@@ -110,7 +122,6 @@ def extract_box(image, coordinates, output_path=None):
     return crop
 
 
-@timeit
 def run_in_parallel(func, args):
     """
     Runs given function for each of the items in the argument list in parallel.

@@ -10,7 +10,7 @@ from skimage.metrics import structural_similarity
 from utils import display
 
 metadata = pd.read_json(config.METADATA_PATH).T
-video_names = os.listdir(config.FACE_IMAGES)
+video_names = os.listdir(config.DIR_FACE_IMAGES)
 
 
 def save_mean_face(images_path):
@@ -31,7 +31,7 @@ def save_mean_face(images_path):
 
 
 if __name__ == '__main__':
-    for p in glob.glob(f'{config.FACE_IMAGES}/*.mp4'):
+    for p in glob.glob(f'{config.DIR_FACE_IMAGES}/*.mp4'):
         print(p)
         try:
             save_mean_face(glob.glob(f'{p}/*.jpg'))

@@ -13,7 +13,7 @@ from utils import display
 
 print(f'{config.METADATA_PATH} exists? {os.path.exists(config.METADATA_PATH)}')
 metadata = pd.read_json(config.METADATA_PATH).T
-video_names = os.listdir(config.FACE_IMAGES)
+video_names = os.listdir(config.DIR_FACE_IMAGES)
 
 
 def hist(img, title=''):
@@ -66,8 +66,8 @@ def save_face_comparision():
         if not ret:
             continue
 
-        fake_images = glob.glob(f'{config.FACE_IMAGES}/{fake_video_name}/*.jpg')
-        real_images = glob.glob(f'{config.FACE_IMAGES}/{real_video_name}/*.jpg')
+        fake_images = glob.glob(f'{config.DIR_FACE_IMAGES}/{fake_video_name}/*.jpg')
+        real_images = glob.glob(f'{config.DIR_FACE_IMAGES}/{real_video_name}/*.jpg')
 
         assert len(fake_images) == len(
             real_images), f'Image counts does not match: fake: {fake_video_name}, original: {real_video_name}'
@@ -81,7 +81,7 @@ def save_face_comparision():
 
 
 def multiple_face_videos():
-    for v in glob.glob(config.FACE_IMAGES + '/*'):
+    for v in glob.glob(config.DIR_FACE_IMAGES + '/*'):
         fake_imgs = glob.glob(v + '/*')
         if len(fake_imgs) < 30:
             continue
@@ -93,6 +93,6 @@ def multiple_face_videos():
         real_name = metadata.loc[name]['original']
         print(f'Fake: {os.path.basename(v)}, Real: {real_name}, count: {len(fake_imgs)}')
 
-        real_imgs = glob.glob(f'{config.FACE_IMAGES}/{real_name}/*')
+        real_imgs = glob.glob(f'{config.DIR_FACE_IMAGES}/{real_name}/*')
         for real, fake in zip(real_imgs, fake_imgs):
             display([diff_images(real, fake)])

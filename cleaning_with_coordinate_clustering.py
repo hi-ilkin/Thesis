@@ -2,14 +2,18 @@ import glob
 import json
 import math
 import os
+import shutil
+
 import pandas as pd
 
+from datetime import datetime
 from ipywidgets import Video
 from sklearn.cluster import AgglomerativeClustering
 
 import config
 from utils import get_frames, timeit, run_in_parallel, extract_box
 
+# TODO: What if coordinates not extracted yet?
 face_coordinates = pd.read_json(config.FACE_COORDINATES_PATH).T
 
 
@@ -33,7 +37,7 @@ metadata = Metadata()
 
 
 class VideoReader:
-    def __init__(self, name):
+    def __init__(self, name, face_coordinates=face_coordinates):
 
         self.frame_ids = []
         self.name = name
@@ -91,9 +95,16 @@ class VideoReader:
         if len(self.face_centers) == 0:
             return
 
-        self.cluster_labels = AgglomerativeClustering(n_clusters=None,
+        if len(self.face_centers) == 1:
+            self.cluster_labels = [0]
+            return
+        try:
+            self.cluster_labels = AgglomerativeClustering(n_clusters=None,
                                                       distance_threshold=threshold,
                                                       linkage=linkage).fit(self.face_centers).labels_
+        except Exception as e:
+            print(self.name, e)
+            exit(-1)
 
     def cluster_faces(self, use_images=False, labels=None):
 
@@ -121,7 +132,7 @@ class VideoReader:
         for coordinates in self.coordinates:
             try:
                 for i, (frame_id, face) in enumerate(coordinates):
-                    extract_box(self.frames[frame_id], face, f'{config.FACE_IMAGES}/{self.name}_{frame_id}_{i}.jpg')
+                    extract_box(self.frames[frame_id], face, f'{config.DIR_FACE_IMAGES}/{self.name}_{frame_id}_{i}.jpg')
             except Exception as e:
                 if math.isnan(coordinates):
                     continue
@@ -154,6 +165,7 @@ def run(name):
     return {name: clusters}
 
 
+@timeit
 def clean_face_coordinates():
     """
     - Cluster faces using face centers
@@ -161,42 +173,55 @@ def clean_face_coordinates():
     - Remove clusters with less than 10 items
     - Save new face coordinates
     """
+    print(f'[{datetime.now()}] Removing redundant face clusters from Part-{config.part}')
     results = run_in_parallel(run, face_coordinates.index)
-    cleaned_faces_path = os.path.dirname(config.FACE_COORDINATES_PATH) + '/cleaned_faces_48_higher_th.json'
 
     cleaned_faces = {}
     for res in results:
         cleaned_faces.update(res)
-    with open(cleaned_faces_path, 'w') as f:
+    with open(config.CLEANED_FACE_COORDINATES_PATH, 'w') as f:
         json.dump(cleaned_faces, f)
 
 
 def _run(name):
-    video = VideoReader(name)
+    face_coordinates = pd.read_json(config.CLEANED_FACE_COORDINATES_PATH).T
+    video = VideoReader(name, face_coordinates)
     video.extract_faces()
     return None
 
 
+@timeit
 def run_face_extraction():
+    print(f'[{datetime.now()}] Extracting detected face images from Part-{config.part}')
     videos = [os.path.basename(f) for f in glob.glob(config.VIDEO_PATH)]
     run_in_parallel(_run, videos)
 
 
 @timeit
 def prepare_labels():
-    face_images = [os.path.basename(f) for f in glob.glob(config.FACE_IMAGES + '/*.jpg')]
+    print(f'[{datetime.now()}] Preparing labels for Part-{config.part}')
+    face_images = [os.path.basename(f) for f in glob.glob(config.DIR_FACE_IMAGES + '/*.jpg')]
     labels = {}
 
     for i, f in enumerate(face_images):
-        if (i+1) % 1000 == 0:
+        if (i + 1) % 1000 == 0:
             print(f"{i + 1}/{len(face_images)}")
         name = f.split('_')[0]
-        labels[f] = metadata[name][0]
+        label = metadata[name][0]
+        if label is None:
+            continue
+        labels[f] = label
 
-    pd.DataFrame(labels.items(), columns=['name', 'label']).to_csv('labels.csv', index=False)
+    pd.DataFrame(labels.items(), columns=['name', 'label']).to_csv(config.FACE_LABELS_PATH, index=False)
+
+
+def read_face_coordinates():
+    global face_coordinates
+    face_coordinates = pd.read_json(config.FACE_COORDINATES_PATH).T
 
 
 if __name__ == '__main__':
-    # clean_face_coordinates()
-    # run_face_extraction()
+    run_face_extraction()
+    clean_face_coordinates()
     prepare_labels()
+    shutil.make_archive('train_faces', 'zip', config.DIR_FACE_IMAGES)

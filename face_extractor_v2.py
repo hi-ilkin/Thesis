@@ -11,11 +11,8 @@ import multiprocessing
 import os
 import pandas as pd
 import time
-from face_extractor import FaceExtractor
-from multiprocessing import Pool, cpu_count
-from multiprocessing import Process
-
-from utils import get_frames, save_video
+from datetime import datetime
+from utils import get_frames, save_video, timeit
 
 video_paths = {os.path.basename(f): f for f in glob.glob(config.VIDEO_PATH)}
 metadata = pd.read_json(config.METADATA_PATH).T
@@ -23,7 +20,6 @@ metadata = pd.read_json(config.METADATA_PATH).T
 mtcnn = MTCNN(image_size=300, margin=20,
               keep_all=True,
               min_face_size=60,
-              thresholds=[0.85, 0.95, 0.95],
               post_process=False, device='cuda:0')
 frames_pool = {}
 
@@ -129,7 +125,7 @@ def extract_faces_using_coordinates(name):
         if faces.get(str(i), None) is None:
             continue
 
-        face_output = f'{config.FACE_IMAGES}/{name}'
+        face_output = f'{config.DIR_FACE_IMAGES}/{name}'
 
         if not os.path.exists(face_output):
             os.makedirs(face_output)
@@ -144,7 +140,9 @@ def extract_faces_using_coordinates(name):
                 cv2.imwrite(f'{face_output}/{name}_{frame_id}_{face_id}.jpg', face)
 
 
+@timeit
 def extract_face_coordinates_from_original_videos():
+    print(f'[{datetime.now()}] Detecting faces and saving coordinates (original only) from Part-{config.part}')
     originals = metadata[metadata['label'] == 'REAL'].index.values
     print(f"{len(originals)} of {len(metadata)} are original videos.")
     threading.Thread(target=extract_frames, args=(originals,)).start()
@@ -154,5 +152,5 @@ def extract_face_coordinates_from_original_videos():
 if __name__ == '__main__':
     extract_face_coordinates_from_original_videos()
 
-    # with Pool(4) as pool:
-    #     pool.map(extract_faces_using_coordinates, video_paths.keys())
+    with multiprocessing.Pool(4) as pool:
+        pool.map(extract_faces_using_coordinates, video_paths.keys())

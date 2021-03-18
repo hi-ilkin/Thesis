@@ -98,10 +98,10 @@ def save_clusters(cluster_labels, paths_to_images):
 
 if __name__ == '__main__':
     # folders = ['bvzjkezkms.mp4', 'bsqgziaylx.mp4'] + [random.choice(os.listdir('faces')) for _ in range(5)]
-    folders = os.listdir(config.FACE_IMAGES)
+    folders = os.listdir(config.DIR_FACE_IMAGES)
     for i, folder in enumerate(folders):
         if folder.endswith('mp4'):
             if i % 100 == 0:
                 print(f'{i+1}/{len(folders)} processed')
-            paths = [p for p in glob.glob(f'{config.FACE_IMAGES}/{folder}/*.jpg') if not p.endswith('mean_face.jpg')]
+            paths = [p for p in glob.glob(f'{config.DIR_FACE_IMAGES}/{folder}/*.jpg') if not p.endswith('mean_face.jpg')]
             cluster(paths)
