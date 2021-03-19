@@ -4,6 +4,7 @@ import math
 import os
 import shutil
 
+import numpy as np
 import pandas as pd
 
 from datetime import datetime
@@ -12,9 +13,6 @@ from sklearn.cluster import AgglomerativeClustering
 
 import config
 from utils import get_frames, timeit, run_in_parallel, extract_box
-
-# TODO: What if coordinates not extracted yet?
-face_coordinates = pd.read_json(config.FACE_COORDINATES_PATH).T
 
 
 class Metadata:
@@ -26,8 +24,11 @@ class Metadata:
             return None, None
         return self.metadata.loc[name][['label', 'original']].values
 
-    def fakes(self):
-        return self.metadata[self.metadata['label'] == 'FAKE']
+    def fakes(self, original=None):
+        fakes = self.metadata[self.metadata['label'] == 'FAKE']
+        if original is not None:
+            return fakes[fakes['original'] == original]
+        return fakes
 
     def reals(self):
         return self.metadata[self.metadata['label'] == 'REAL']
@@ -37,7 +38,7 @@ metadata = Metadata()
 
 
 class VideoReader:
-    def __init__(self, name, face_coordinates=face_coordinates):
+    def __init__(self, name, face_coordinates=None):
 
         self.frame_ids = []
         self.name = name
@@ -100,8 +101,8 @@ class VideoReader:
             return
         try:
             self.cluster_labels = AgglomerativeClustering(n_clusters=None,
-                                                      distance_threshold=threshold,
-                                                      linkage=linkage).fit(self.face_centers).labels_
+                                                          distance_threshold=threshold,
+                                                          linkage=linkage).fit(self.face_centers).labels_
         except Exception as e:
             print(self.name, e)
             exit(-1)
@@ -129,6 +130,10 @@ class VideoReader:
         return clusters
 
     def extract_faces(self):
+        """
+        Works with clustered faces coordinates
+        :return:
+        """
         for coordinates in self.coordinates:
             try:
                 for i, (frame_id, face) in enumerate(coordinates):
@@ -137,6 +142,21 @@ class VideoReader:
                 if math.isnan(coordinates):
                     continue
                 print(f'Problem with {self.name} : {e}')
+
+    def extract_faces_v2(self):
+        """
+        works with non-clustered face coordinates
+        :return:
+        """
+        faces, labels = [], []
+
+        for coordinate, frame in zip(self.coordinates, self.frames):
+            if coordinate is not None:
+                for face in coordinate:
+                    faces.append(extract_box(frame, face))
+                    labels.append(self.label)
+
+        return faces, labels
 
     def play(self):
         """
@@ -184,17 +204,26 @@ def clean_face_coordinates():
 
 
 def _run(name):
-    face_coordinates = pd.read_json(config.CLEANED_FACE_COORDINATES_PATH).T
+    face_coordinates = pd.read_json(config.FACE_COORDINATES_PATH).T
     video = VideoReader(name, face_coordinates)
-    video.extract_faces()
-    return None
+    return video.extract_faces_v2()
 
 
 @timeit
 def run_face_extraction():
     print(f'[{datetime.now()}] Extracting detected face images from Part-{config.part}')
     videos = [os.path.basename(f) for f in glob.glob(config.VIDEO_PATH)]
-    run_in_parallel(_run, videos)
+    results = run_in_parallel(_run, videos)
+
+    all_faces_in_chunk = []
+    all_labels_in_chunk = []
+
+    for res in results:
+        faces, labels = res
+        all_faces_in_chunk.extend(faces)
+        all_labels_in_chunk.extend(labels)
+
+    np.savez(config.CHUNK_PATH, data=all_faces_in_chunk, labels=all_labels_in_chunk)
 
 
 @timeit
@@ -222,6 +251,10 @@ def read_face_coordinates():
 
 if __name__ == '__main__':
     run_face_extraction()
-    clean_face_coordinates()
-    prepare_labels()
-    shutil.make_archive('train_faces', 'zip', config.DIR_FACE_IMAGES)
+    # clean_face_coordinates()
+    # prepare_labels()
+    # shutil.make_archive('train_faces', 'zip', config.DIR_FACE_IMAGES)
+    # videos = glob.glob(config.VIDEO_PATH)
+    # n = os.path.basename(videos[0])
+    # print(n, len(videos))
+    # _run(n)

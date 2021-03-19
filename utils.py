@@ -3,7 +3,6 @@ import time
 from multiprocessing import Pool
 
 import cv2
-import mmcv
 import numpy as np
 from PIL import Image
 from functools import wraps
@@ -122,16 +121,16 @@ def extract_box(image, coordinates, output_path=None):
     return crop
 
 
-def run_in_parallel(func, args):
+def run_in_parallel(func, args) -> list:
     """
     Runs given function for each of the items in the argument list in parallel.
     Gathers all results and returns
     :param func: Function to run in parallel. Should return a value
     :param args: List of items to pass function
-    :return: Results of all runs
+    :return: List, Results of all runs
     """
     results = []
-    with Pool(processes=os.cpu_count() - 1) as pool:
+    with Pool(processes=5) as pool:
         for item in args:
             result = pool.apply_async(func, (item,))
             results.append(result)
