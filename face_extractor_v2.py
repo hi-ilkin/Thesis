@@ -17,10 +17,7 @@ from utils import get_frames, save_video, timeit
 video_paths = {os.path.basename(f): f for f in glob.glob(config.VIDEO_PATH)}
 metadata = pd.read_json(config.METADATA_PATH).T
 
-mtcnn = MTCNN(image_size=300, margin=20,
-              keep_all=True,
-              min_face_size=60,
-              post_process=False, device='cuda:0')
+mtcnn = MTCNN(**config.FACE_DETECTOR_KWARGS)
 frames_pool = {}
 
 
@@ -28,21 +25,25 @@ def extract_frames(video_names):
     global frames_pool
     for n in video_names:
         video_path = video_paths[n]
-        frames_pool[n] = get_frames(video_path)
+        frames_pool[n] = get_frames(video_path, output_type='PIL')
 
 
 def extract_face_coordinates(frames):
     face_coordinates = {}
-    for i, frame in enumerate(frames):
-        # Detect faces
-        boxes, _ = mtcnn.detect(frame)
-        face_coordinates[i] = None
+    new_boxes = []
 
-        if boxes is not None:
-            face_coordinates[i] = boxes.tolist()
+    boxes, probabilities = mtcnn.detect(frames)
+    if boxes is not None:
+        for i, b in enumerate(boxes):
+            if b is not None:
+                face_coordinates[i] = b[:2].tolist()
+            else:
+                face_coordinates[i] = b
 
     return {'face_coordinates': face_coordinates}
 
+
+# previous run 274
 
 def get_item_from_pool():
     global frames_pool
@@ -119,7 +120,7 @@ def extract_faces_using_coordinates(name):
         return
 
     faces = face_coordinates[name_original]
-    frames = get_frames(path_to_video)
+    frames = get_frames(path_to_video, stop=None, step=30)
 
     for i, frame in enumerate(frames):
         if faces.get(str(i), None) is None:
@@ -150,7 +151,11 @@ def extract_face_coordinates_from_original_videos():
 
 
 if __name__ == '__main__':
+
+    if config.OVERWRITE_FACE_COORDINATES and os.path.exists(config.FACE_COORDINATES_PATH):
+        os.remove(config.FACE_COORDINATES_PATH)
+
     extract_face_coordinates_from_original_videos()
 
-    with multiprocessing.Pool(4) as pool:
-        pool.map(extract_faces_using_coordinates, video_paths.keys())
+    # with multiprocessing.Pool(4) as pool:
+    #     pool.map(extract_faces_using_coordinates, video_paths.keys())

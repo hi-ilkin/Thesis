@@ -8,6 +8,8 @@ import numpy as np
 from PIL import Image
 from functools import wraps
 
+import config
+
 
 def timeit(func):
     @wraps(func)
@@ -20,39 +22,37 @@ def timeit(func):
     return wrapper
 
 
-def get_frames(video_path, frame_limit=16, step=1, output_type='CV'):
+def get_frames(video_path, start=config.START, stop=config.STOP, step=config.STEP, output_type='CV'):
     """
     samples given amount of frames with given frequency either in opencv of PIL Image format
     :param video_path: path to video
-    :param frame_limit: number of frames to be returned, default : 16
+    :param start: start of frame sampling
+    :param stop:  end of frame sampling if None checks all frames, default : None
     :param step: sampling frequency, default 1
     :param output_type: 'CV' or 'PIL' type of output image
     :return: list of images
     """
 
-    # TODO: Implement optimized way for frame access:
-    '''
-    capture = cv.VideoCapture(movie_path)
-    for i in range(0, num_frames):
-        ret = capture.grab()
-        if i % 10 == 0:
-            ret, frame = capture.retrieve()
-            # do something with frame
-    capture.release()
-    '''
-
-    video = mmcv.VideoReader(video_path)
+    capture = cv2.VideoCapture(video_path)
     frames = []
-    counter = 0
-    for i, frame in enumerate(video):
-        if counter == frame_limit:
-            break
+
+    total_frames_in_video = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
+    if stop is None:
+        stop = total_frames_in_video
+
+    stop = min(total_frames_in_video, stop)
+
+    for i in range(stop):
+        ret = capture.grab()
+        if i < start:
+            continue
+
         if i % step == 0:
+            ret, frame = capture.retrieve()
             if output_type == 'PIL':
                 frames.append(Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)))
             elif output_type == 'CV':
                 frames.append(frame)
-        counter += 1
     return frames
 
 
