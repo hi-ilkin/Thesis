@@ -155,8 +155,9 @@ class VideoReader:
                 for face in coordinate:
                     faces.append(extract_box(frame, face))
                     labels.append(self.label)
-            else:
-                print(f'[WARNING] No face detected on {self.path}')
+
+        if len(faces) == 0:
+            print(f'[WARNING] No face detected on {self.path}')
         return faces, labels
 
     def play(self):
