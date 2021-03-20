@@ -7,17 +7,17 @@ for  better experience with notebooks install jupyterlab and [nbextensions](http
 
 ### Hardware specs
 Computer 1:
-- Intel i7-9750H 2.6 GH
+- Intel i7-9750H 2.6 GHz
 - 16 GB RAM
 - Nvidia GTX 1650 Max-Q
 
 Computer 2:
-- Intel i7-9750H 2.6 GH
+- Intel i7-9750H 2.6 GHz
 - 16 GB RAM
 - Nvidia RTX 2070 Max-Q
 
 Computer 3: TODO: Fill
-- Intel
+- Intel i7-8700K 3.7 GHz
 - 64 GB RAM
 - Nvidia Titan V
 
