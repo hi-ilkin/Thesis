@@ -1,10 +1,25 @@
 # Environment
-- Python 3.8
-- CUDA 11.0 Update 1
-  
+- Python 3.7+
+- CUDA 11.0 Update 1 or CUDA 10.1
+- Install proper [pytorch](https://pytorch.org/) version from  recommended way.
+
+for  better experience with notebooks install jupyterlab and [nbextensions](https://jupyter-contrib-nbextensions.readthedocs.io/en/latest/install.html). 
+
 ### Hardware specs
-- CPU: Intel i7-9750H 2.6 GHz
+Computer 1:
+- Intel i7-9750H 2.6 GH
+- 16 GB RAM
 - Nvidia GTX 1650 Max-Q
+
+Computer 2:
+- Intel i7-9750H 2.6 GH
+- 16 GB RAM
+- Nvidia RTX 2070 Max-Q
+
+Computer 3: TODO: Fill
+- Intel
+- 64 GB RAM
+- Nvidia Titan V
 
 ### Third party tools
 - [Facenet-pytorch](https://github.com/timesler/facenet-pytorch)
