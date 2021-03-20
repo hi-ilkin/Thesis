@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 from datetime import datetime
-from ipywidgets import Video
+from IPython.display import Video
 from sklearn.cluster import AgglomerativeClustering
 
 import config
@@ -151,11 +151,12 @@ class VideoReader:
         faces, labels = [], []
 
         for coordinate, frame in zip(self.coordinates, self.frames):
-            if coordinate is not None:
+            if coordinate is not None and type(coordinate) == list:
                 for face in coordinate:
                     faces.append(extract_box(frame, face))
                     labels.append(self.label)
-
+            else:
+                print(f'[WARNING] No face detected on {self.path}')
         return faces, labels
 
     def play(self):
@@ -186,7 +187,7 @@ def run(name):
 
 
 @timeit
-def clean_face_coordinates():
+def clean_face_coordinates(face_coordinates):
     """
     - Cluster faces using face centers
     - Keep single clusters
@@ -242,11 +243,6 @@ def prepare_labels():
         labels[f] = label
 
     pd.DataFrame(labels.items(), columns=['name', 'label']).to_csv(config.FACE_LABELS_PATH, index=False)
-
-
-def read_face_coordinates():
-    global face_coordinates
-    face_coordinates = pd.read_json(config.FACE_COORDINATES_PATH).T
 
 
 if __name__ == '__main__':
