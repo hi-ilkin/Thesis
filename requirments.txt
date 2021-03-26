@@ -3,7 +3,7 @@ pandas
 opencv-python
 matplotlib
 facenet-pytorch==2.5.1
-mmcv==1.2.6
+pytorch-lightning
 timm==0.3.2
 albumentations==0.5.2
 scikit-learn

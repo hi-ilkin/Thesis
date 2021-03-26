@@ -1,3 +1,5 @@
+import os
+
 import timm
 import torch
 from torch import nn
@@ -9,7 +11,9 @@ from torchvision.datasets import MNIST
 from torchvision import transforms
 import pytorch_lightning as pl
 
+import config
 import train_config
+from tmp import DFDCDataset
 
 
 class LITEfficientNet(pl.LightningModule):
@@ -57,5 +61,7 @@ class LITEfficientNet(pl.LightningModule):
 
 
 model = LITEfficientNet(version='b0')
-trainer = pl.Trainer()
-trainer.fit(model, )
+dataset = DFDCDataset(os.path.dirname(config.CHUNK_PATH))
+
+trainer = pl.Trainer(gpus=1, max_epochs=1)
+trainer.fit(model, dataset)
