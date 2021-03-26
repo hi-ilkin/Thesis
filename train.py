@@ -43,6 +43,8 @@ import config
 
 
 # CONFIG
+from utils import timeit
+
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 MODEL_NAME = 'deit_base_patch16_224'  # other model names ['deit_base_patch16_224', 'vit_base_patch16_384', 'resnext50_32x4d', 'tf_efficientnet_b3_ns']
 LOAD_PRETRAINED = True
@@ -55,9 +57,9 @@ MODE = 'min'
 FACTOR = 0.1
 PATIENCE = 1
 
-EPOCHS = 20
-BATCH_SIZE = 128
-NUM_WORKERS = 0  # os.cpu_count() - 1
+EPOCHS = 5
+BATCH_SIZE = 64
+NUM_WORKERS = os.cpu_count() - 1
 
 
 # ## Dataset
@@ -225,8 +227,7 @@ class AverageMeter(object):
         self.avg = self.sum / self.count
 
 
-def save_checkpoint(model, optimizer, scheduler, scaler, epoch, loss, name='demo_local_train.tar'):
-    path = 'D:/DFDC/models/' + name
+def save_checkpoint(model, optimizer, scheduler, scaler, epoch, loss, path):
     torch.save({
         'epoch': epoch,
         'model_state_dict': model.state_dict(),
@@ -281,7 +282,7 @@ if __name__ == '__main__':
     train_loss = []
     validation_loss = []
     loss = 0
-    model = EfficientNet('b0')
+    model = EfficientNet('b4')
     model.to(DEVICE)
     optimizer = Adam(model.parameters(), lr=LR)
     scheduler = ReduceLROnPlateau(optimizer, mode=MODE, factor=FACTOR, patience=PATIENCE, verbose=True)
@@ -295,7 +296,7 @@ if __name__ == '__main__':
     validation_loader = get_validation_loader(validation_chunk_path)
 
     if LOAD_CHECKPOINT:
-        model, optimizer, scheduler, scaler, epoch, loss = load_checkpoint('D:/DFDC/models/demo_local_train.tar', model,
+        model, optimizer, scheduler, scaler, epoch, loss = load_checkpoint(config.BEST_MODEL_PATH, model,
                                                                            optimizer, scheduler, scaler)
 
     for epoch in range(EPOCHS):
@@ -322,8 +323,7 @@ if __name__ == '__main__':
                     scaler.update()
                     optimizer.zero_grad()
 
-        save_checkpoint(model, optimizer, scheduler, scaler, epoch, loss,
-                        name='model-checkpoint-cfg1.tar')
+        save_checkpoint(model, optimizer, scheduler, scaler, epoch, loss, path=config.CHECKPOINT_PATH)
         print(f'Train : Epoch {epoch} completed in {time.time() - t:.2f} secs')
         print(f'Last train loss: {train_loss[-1]} AVG train loss: {np.mean(train_loss)}')
 
@@ -342,13 +342,13 @@ if __name__ == '__main__':
 
         cur_val_loss = np.mean(tmp_loss)
         validation_loss.append(cur_val_loss)
-        print(f"Validation loss: {cur_val_loss} average validation loss: {np.mean(validation_loss)}")
-        prev_loss = -99 if len(validation_loss) < 2 else validation_loss[-2]
+        prev_loss = 99 if len(validation_loss) < 2 else validation_loss[-2]
+        print(f"Validation loss: {cur_val_loss} previous validation loss: {prev_loss}")
 
         if cur_val_loss < prev_loss:
             print(f"Average validation loss improved from {prev_loss} to {cur_val_loss}. Saving checkpoint")
             save_checkpoint(model, optimizer, scheduler, scaler, epoch, loss,
-                            name='model-best-cfg1.tar')
+                            path = config.BEST_MODEL_PATH)
 
         scheduler.step(np.mean(validation_loss))
 
@@ -360,4 +360,4 @@ if __name__ == '__main__':
     # plt.plot(train_loss)
     # plt.plot(validation_loss)
 
-    np.savez('losses.npz', train=train_loss, validation=validation_loss)
+    np.savez('efb0-losses.npz', train=train_loss, validation=validation_loss)
