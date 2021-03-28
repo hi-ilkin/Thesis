@@ -27,7 +27,7 @@ class Models(pl.LightningModule):
         images, labels = train_batch
         y_preds = self.model(images)
         loss = self.criterion(y_preds, labels)
-
+        self.log('train_loss', loss)
         return loss
 
     def validation_step(self, val_batch, batch_idx):

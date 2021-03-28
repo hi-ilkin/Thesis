@@ -100,7 +100,7 @@ class DFDCLightningDataset(pl.LightningDataModule):
             self.dataset,
             batch_size=32,
             shuffle=True,
-            num_workers=0,
+            num_workers=11,
             pin_memory=True
         )
 
@@ -113,7 +113,7 @@ class DFDCLightningDataset(pl.LightningDataModule):
             self.dataset,
             batch_size=32,
             shuffle=False,
-            num_workers=0,
+            num_workers=11,
             pin_memory=True
         )
         return loader
