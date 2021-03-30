@@ -1,6 +1,8 @@
 import os
+import wandb
 
 from pytorch_lightning import seed_everything
+from pytorch_lightning.loggers import WandbLogger
 
 import config
 from training.datasets import DFDCLightningDataset
@@ -9,6 +11,9 @@ import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint
 
 if __name__ == '__main__':
+    wandb.login()
+    wandb_logger = WandbLogger(project='DFDC-test', name='test-run')
+
     seed_everything(99)
     # model = EfficientNet(version='b0')
     model = DeiT()
@@ -21,6 +26,7 @@ if __name__ == '__main__':
     )
     dataset = DFDCLightningDataset()
     trainer = pl.Trainer(gpus=1, precision=16,
+                         logger=wandb_logger,
                          accumulate_grad_batches=4,
                          reload_dataloaders_every_epoch=True,
                          check_val_every_n_epoch=20,
