@@ -1,0 +1,63 @@
+# Face detector specific config
+detector:
+  desc: face detector module
+  value: MTCNN
+sampling_rate:
+  desc: detect face at every k frame
+  value: 30
+margin:
+  desc: margin around detected face in pixels
+  value: 30
+thresholds_mtcnn:
+  desc: threshold value for MTCNN detector
+  value: [0.7, 0.8, 0.8]
+min_face_size:
+  desc: minimum accepted detected face size
+  value: 60
+image_size:
+  desc: size of detection output (square)
+  value: 224
+
+# dataset specific config
+batch_size:
+  desc: Size of each mini-batch
+  value: 128
+num_workers:
+  desc: number of workers to load data
+  value: 0 # 0 for windows, os.cpu_count() - 1 for Unix
+load_pretrained:
+  desc: load original pretrained model
+  value: true
+load_checkpoint:
+  desc: continue from checkpoint
+  value: false
+
+# training configuration
+model_name:
+  value: efnet0
+epochs:
+  desc: Number of epochs to train over
+  value: 10
+lr:
+  desc: Learning rate
+  value: 0.001
+optimizer:
+  desc: Optimizer
+  value: Adam
+target_size:
+  desc: Output size
+  value: 2
+output_weights:
+  desc: output weights for inbalanced dataset
+  value: [0.2, 0.8]
+device:
+  desc: use of GPU or CPU
+  value: cuda
+gpus:
+  value: 1
+precision:
+  desc: half or full precision training. 16 and 32 supported
+  value: 16
+accumulate_grad_batches:
+  desc: Accumulates grads every k batches
+  value: 4

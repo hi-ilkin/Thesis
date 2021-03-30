@@ -7,8 +7,7 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 import pytorch_lightning as pl
-
-import config
+import config as path_config
 from albumentations import Compose, RandomBrightnessContrast, HorizontalFlip, HueSaturationValue, OneOf, ToGray, \
     ShiftScaleRotate, ImageCompression, PadIfNeeded, GaussNoise, GaussianBlur, Resize, Normalize
 from albumentations.pytorch import ToTensorV2
@@ -25,7 +24,6 @@ class DFDCDatasetNPZ(Dataset):
         self.data = self.npz['data']
         self.label_names = self.npz['labels']
         self.labels = np.where(self.label_names == 'REAL', 1, 0)
-
         self.transform_mode = mode
         if mode is not None:
             self.transformer = self.get_transformer(mode=mode)
@@ -77,8 +75,9 @@ class DFDCDatasetNPZ(Dataset):
 
 class DFDCLightningDataset(pl.LightningDataModule):
 
-    def __init__(self):
+    def __init__(self, config):
         super(DFDCLightningDataset, self).__init__()
+        self.config = config
         self.train_paths = None
         self.valid_path = None
         self.current_chunk_idx = 0
@@ -88,7 +87,7 @@ class DFDCLightningDataset(pl.LightningDataModule):
         pass
 
     def prepare_data(self, *args, **kwargs):
-        self.train_paths = glob.glob(config.CHUNK_PATH)
+        self.train_paths = glob.glob(path_config.CHUNK_PATH)
         self.valid_path = self.train_paths.pop(-1)
 
         shuffle(self.train_paths)
@@ -98,9 +97,9 @@ class DFDCLightningDataset(pl.LightningDataModule):
         self.dataset = DFDCDatasetNPZ(self.train_paths[self.current_chunk_idx], mode='train')
         loader = torch.utils.data.DataLoader(
             self.dataset,
-            batch_size=32,
+            batch_size=self.config.batch_size,
             shuffle=True,
-            num_workers=11,
+            num_workers=self.config.num_workers,
             pin_memory=True
         )
 
@@ -111,9 +110,9 @@ class DFDCLightningDataset(pl.LightningDataModule):
         self.dataset = DFDCDatasetNPZ(self.valid_path, mode='valid')
         loader = torch.utils.data.DataLoader(
             self.dataset,
-            batch_size=32,
+            batch_size=self.config.batch_size,
             shuffle=False,
-            num_workers=11,
+            num_workers=self.config.num_workers,
             pin_memory=True
         )
         return loader

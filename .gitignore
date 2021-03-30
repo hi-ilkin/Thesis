@@ -1,7 +1,8 @@
 # Project exclude paths
 /data/
-/Geivi/
 /.idea/
 /.ipynb_checkpoints/
 /combined/
 /outputs/
+/training/wandb/
+/training/lightning_logs/

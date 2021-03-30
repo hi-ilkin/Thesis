@@ -4,11 +4,9 @@ from torch import nn
 from torch.optim import Adam
 import pytorch_lightning as pl
 
-import train_config
 
-
-def get_criterion():
-    return nn.CrossEntropyLoss(weight=torch.FloatTensor([2 / 10, 8 / 10]).cuda())
+def get_criterion(weights):
+    return nn.CrossEntropyLoss(weight=torch.FloatTensor(weights).cuda())
 
 
 class Models(pl.LightningModule):
@@ -19,7 +17,7 @@ class Models(pl.LightningModule):
         return self.model(x)
 
     def configure_optimizers(self):
-        optimizer = Adam(self.parameters(), lr=train_config.LR)
+        optimizer = Adam(self.parameters(), lr=self.config.lr)
         # TODO: Add scheduler here
         return optimizer
 
@@ -42,27 +40,27 @@ class Models(pl.LightningModule):
 
 
 class EfficientNet(Models):
-    def __init__(self, version='b0'):
+    def __init__(self, config, version='b0'):
         super().__init__()
+        self.config = config
         if version in ['b0', 'b1', 'b2', 'b3']:
             model_name = f'efficientnet_{version}'
         else:
             model_name = f'tf_efficientnet_{version}'
 
-        self.model = timm.create_model(model_name, pretrained=train_config.LOAD_PRETRAINED)
+        self.model = timm.create_model(model_name, pretrained=self.config.load_pretrained)
         n_features = self.model.classifier.in_features
-        self.model.classifier = nn.Linear(n_features, train_config.TARGET_SIZE)
-        self.criterion = get_criterion()
+        self.model.classifier = nn.Linear(n_features, self.config.target_size)
+        self.criterion = get_criterion(self.config.output_weights)
 
 
 class DeiT(Models):
-    def __init__(self):
+    def __init__(self, config):
         super().__init__()
+        self.config = config
 
         self.model = torch.hub.load('facebookresearch/deit:main', 'deit_base_patch16_224',
-                                    pretrained=train_config.LOAD_PRETRAINED)
+                                    pretrained=self.config.load_pretrained)
         n_features = self.model.head.in_features
-        self.model.head = nn.Linear(n_features, train_config.TARGET_SIZE)
-        self.criterion = get_criterion()
-        self.batch_size = None
-        self.lr = 0.001
+        self.model.head = nn.Linear(n_features, self.config.traget_size)
+        self.criterion = get_criterion(self.config.output_weights)
