@@ -34,6 +34,9 @@ project:
   value: DFDC-test
 model_name:
   value: LR-check
+notes:
+  desc: Add run specific notes here. Don't forget to delete when starting new run
+  value: With this run LongestMaxSize resizing and CosineAnnealingWarmRestarts LR scheduler was added
 resume_from:
   desc: checkpoint to continue from
   value: sample-efnet0-epoch=169-val_loss=0.5782.ckpt
