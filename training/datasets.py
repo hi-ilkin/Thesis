@@ -9,7 +9,7 @@ from torch.utils.data import Dataset
 import pytorch_lightning as pl
 import config as path_config
 from albumentations import Compose, RandomBrightnessContrast, HorizontalFlip, HueSaturationValue, OneOf, ToGray, \
-    ShiftScaleRotate, ImageCompression, PadIfNeeded, GaussNoise, GaussianBlur, Resize, Normalize
+    ShiftScaleRotate, ImageCompression, PadIfNeeded, GaussNoise, GaussianBlur, Resize, Normalize, LongestMaxSize
 from albumentations.pytorch import ToTensorV2
 
 from local_properties import NUM_WORKERS
@@ -46,7 +46,7 @@ class DFDCDatasetNPZ(Dataset):
     def get_transformer(mode, size=224):
         if mode == 'train':
             return Compose([
-                Resize(size, size),
+                LongestMaxSize(size, size),
                 ImageCompression(quality_lower=60, quality_upper=100, p=0.5),
                 GaussNoise(p=0.1),
                 GaussianBlur(blur_limit=3, p=0.05),
@@ -65,7 +65,7 @@ class DFDCDatasetNPZ(Dataset):
             ])
         elif mode == 'valid':
             return Compose([
-                Resize(size, size),
+                LongestMaxSize(size, size),
                 PadIfNeeded(min_height=size, min_width=size, border_mode=cv2.BORDER_CONSTANT),
                 Normalize(
                     mean=[0.485, 0.456, 0.406],
