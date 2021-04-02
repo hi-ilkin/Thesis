@@ -10,7 +10,7 @@ margin:
   value: 30
 thresholds_mtcnn:
   desc: threshold value for MTCNN detector
-  value: [0.7, 0.8, 0.8]
+  value: [ 0.7, 0.8, 0.8 ]
 min_face_size:
   desc: minimum accepted detected face size
   value: 60
@@ -22,9 +22,6 @@ image_size:
 batch_size:
   desc: Size of each mini-batch. EB0 - 256 too big for Titan
   value: 128
-num_workers:
-  desc: number of workers to load data
-  value: 11 # 0 for windows, > 0 for Unix
 load_pretrained:
   desc: load original pretrained model
   value: true
@@ -34,27 +31,21 @@ load_checkpoint:
 
 # training configuration
 project:
-  value: DFDC-phase-1
+  value: DFDC-test
 model_name:
-  value: EfficientNet-B0-resumed1
+  value: LR-check
 resume_from:
   desc: checkpoint to continue from
   value: sample-efnet0-epoch=169-val_loss=0.5782.ckpt
 epochs:
   desc: Number of epochs to train. Should be chunk size * epoch
   value: 200
-lr:
-  desc: Learning rate
-  value: 0.002
-optimizer:
-  desc: Optimizer
-  value: Adam
 target_size:
   desc: Output size
   value: 2
 output_weights:
   desc: output weights for inbalanced dataset
-  value: [0.2, 0.8]
+  value: [ 0.2, 0.8 ]
 device:
   desc: use of GPU or CPU
   value: cuda
@@ -66,3 +57,29 @@ precision:
 accumulate_grad_batches:
   desc: Accumulates grads every k batches
   value: 1
+# lr scheduler setup
+lr_scheduler:
+  desc: Name of the learning rate scheduler
+  value: 'CosineAnnealingWarmRestarts'
+lr_min:
+  desc: minnimum lr rate
+  value: 0.00001
+lr_max:
+  desc: maximum lr rate
+  value: 0.01
+
+## CosineAnnealingWarmRestarts specific params
+lr_t0:
+  desc: Number of iterations for the first restart
+  value: 5
+lr_tmult:
+  desc: A factor increases after a restart
+  value: 1
+
+# other
+val_freq:
+  desc: Frequency of valdiation check with epoch
+  value: 1
+log_freq:
+  desc: Frequency of logging in steps
+  value: 50
