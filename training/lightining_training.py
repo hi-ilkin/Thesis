@@ -1,17 +1,18 @@
 import os
+
 import wandb
 import yaml
-
+import pytorch_lightning as pl
 from pytorch_lightning import seed_everything
+from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 from pytorch_lightning.loggers import WandbLogger
 
 import config
+import local_properties
 from training.datasets import DFDCLightningDataset
-from training.model_zoo import EfficientNet, DeiT
-import pytorch_lightning as pl
-from pytorch_lightning.callbacks import ModelCheckpoint
+from training.model_zoo import EfficientNet
 
-os.environ['REQUESTS_CA_BUNDLE'] = '/home/ilkin/Downloads/piktiv.crt'
+os.environ['REQUESTS_CA_BUNDLE'] = local_properties.SSL_CERTIFICATE_PATH
 
 
 def headlines():
@@ -28,6 +29,7 @@ def train_fn():
     model = EfficientNet(params, version='b0')
     # model = DeiT()
 
+    lr_monitor_callback = LearningRateMonitor(logging_interval='epoch')
     checkpoint_callback = ModelCheckpoint(
         monitor='val_loss',
         dirpath=f'{config.CHECKPOINT_PATH}',
@@ -41,9 +43,10 @@ def train_fn():
                          logger=wandb_logger,
                          accumulate_grad_batches=params.accumulate_grad_batches,
                          reload_dataloaders_every_epoch=True,
-                         check_val_every_n_epoch=5,
+                         check_val_every_n_epoch=params.val_freq,
+                         log_every_n_steps=params.log_freq,
                          resume_from_checkpoint=None,
-                         callbacks=[checkpoint_callback],
+                         callbacks=[checkpoint_callback, lr_monitor_callback],
                          max_epochs=params.epochs,
                          default_root_dir=config.CHECKPOINT_PATH,
                          )
@@ -78,6 +81,6 @@ def tune_hyper_params():
 if __name__ == '__main__':
     seed_everything(99)
 
-    wandb.login(key='c4e2ebb0c3dbe0876676fb7d125f81c39bbc7367')
+    wandb.login(key=local_properties.WANDB_KEY)
     # tune_hyper_params()
     train_fn()

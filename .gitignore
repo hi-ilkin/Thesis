@@ -6,3 +6,4 @@
 /outputs/
 /training/wandb/
 /training/lightning_logs/
+/local_properties.py
