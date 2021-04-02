@@ -3,6 +3,7 @@ import torch
 from torch import nn
 from torch.optim import Adam
 import pytorch_lightning as pl
+from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
 
 
 def get_criterion(weights):
@@ -19,9 +20,16 @@ class Models(pl.LightningModule):
         return self.model(x)
 
     def configure_optimizers(self):
-        optimizer = Adam(self.parameters(), lr=self.config.lr)
-        # TODO: Add scheduler here
-        return optimizer
+        optimizer = Adam(self.parameters(), lr=self.config.lr_min)
+        print(f"{self.config.lr_t0} x {self.config.lr_tmult}")
+        scheduler = CosineAnnealingWarmRestarts(optimizer,
+                                                T_0=self.config.lr_t0,
+                                                T_mult=self.config.lr_tmult)
+
+        return {
+            'optimizer': optimizer,
+            'lr_scheduler': scheduler
+        }
 
     def training_step(self, train_batch, batch_idx):
         images, labels = train_batch
@@ -38,6 +46,7 @@ class Models(pl.LightningModule):
         return loss
 
     def backward(self, loss, optimizer, optimizer_idx, *args, **kwargs):
+        print(f"LR: {optimizer.param_groups[0]['lr']}")
         loss.backward()
 
 
