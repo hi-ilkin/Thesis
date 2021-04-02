@@ -1,6 +1,8 @@
 import os
 
-root = '/media/ilkin/Samsung_T5/DFDC'
+import local_properties
+
+root = local_properties.DATA_ROOT_DIR
 part = 2
 
 OVERWRITE_FACE_COORDINATES = True

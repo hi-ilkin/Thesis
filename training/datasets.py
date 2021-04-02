@@ -12,6 +12,8 @@ from albumentations import Compose, RandomBrightnessContrast, HorizontalFlip, Hu
     ShiftScaleRotate, ImageCompression, PadIfNeeded, GaussNoise, GaussianBlur, Resize, Normalize
 from albumentations.pytorch import ToTensorV2
 
+from local_properties import NUM_WORKERS
+
 
 class DFDCDatasetNPZ(Dataset):
     """
@@ -99,7 +101,7 @@ class DFDCLightningDataset(pl.LightningDataModule):
             self.dataset,
             batch_size=self.config.batch_size,
             shuffle=True,
-            num_workers=self.config.num_workers,
+            num_workers=NUM_WORKERS,
             pin_memory=True
         )
 
@@ -112,7 +114,7 @@ class DFDCLightningDataset(pl.LightningDataModule):
             self.dataset,
             batch_size=self.config.batch_size,
             shuffle=False,
-            num_workers=self.config.num_workers,
+            num_workers=NUM_WORKERS,
             pin_memory=True
         )
         return loader
