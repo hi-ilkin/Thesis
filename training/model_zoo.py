@@ -6,6 +6,8 @@ import pytorch_lightning as pl
 
 
 def get_criterion(weights):
+    if weights is None or type(weights) != list:
+        return nn.CrossEntropyLoss()
     return nn.CrossEntropyLoss(weight=torch.FloatTensor(weights).cuda())
 
 

@@ -20,11 +20,11 @@ image_size:
 
 # dataset specific config
 batch_size:
-  desc: Size of each mini-batch
+  desc: Size of each mini-batch. EB0 - 256 too big for Titan
   value: 128
 num_workers:
   desc: number of workers to load data
-  value: 0 # 0 for windows, os.cpu_count() - 1 for Unix
+  value: 11 # 0 for windows, > 0 for Unix
 load_pretrained:
   desc: load original pretrained model
   value: true
@@ -33,14 +33,19 @@ load_checkpoint:
   value: false
 
 # training configuration
+project:
+  value: DFDC-phase-1
 model_name:
-  value: efnet0
+  value: EfficientNet-B0-resumed1
+resume_from:
+  desc: checkpoint to continue from
+  value: sample-efnet0-epoch=169-val_loss=0.5782.ckpt
 epochs:
-  desc: Number of epochs to train over
-  value: 10
+  desc: Number of epochs to train. Should be chunk size * epoch
+  value: 200
 lr:
   desc: Learning rate
-  value: 0.001
+  value: 0.002
 optimizer:
   desc: Optimizer
   value: Adam
@@ -60,4 +65,4 @@ precision:
   value: 16
 accumulate_grad_batches:
   desc: Accumulates grads every k batches
-  value: 4
+  value: 1

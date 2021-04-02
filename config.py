@@ -1,6 +1,6 @@
 import os
 
-root = 'D:/DFDC'
+root = '/media/ilkin/Samsung_T5/DFDC'
 part = 2
 
 OVERWRITE_FACE_COORDINATES = True
@@ -27,9 +27,9 @@ METADATA_PATH = f'{root}/videos/dfdc_train_part_{part}/metadata.json'
 FACE_COORDINATES_PATH = f'{root}/coordinates/face_coordinates_step30_{part}.json'
 CLEANED_FACE_COORDINATES_PATH = f'{root}/coordinates/cleaned_coordinates_{part}.json'
 FACE_LABELS_PATH = f'{root}/labels_{part}.csv'
-CHUNK_PATH = f'{root}/small_chunks/chunk_*'
+CHUNK_PATH = f'{root}/chunks/chunk_*'
 BEST_MODEL_PATH = f'{root}/models/efn4-best-cfg1.tar'
-CHECKPOINT_PATH = f'{root}/models/efn4-checkpoint-cfg1.tar'
+CHECKPOINT_PATH = f'{root}/checkpoints'
 
 zpart = part
 if part < 10:
