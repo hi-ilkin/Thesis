@@ -46,7 +46,7 @@ class DFDCDatasetNPZ(Dataset):
     def get_transformer(mode, size=224):
         if mode == 'train':
             return Compose([
-                LongestMaxSize(size, size),
+                LongestMaxSize(size),
                 ImageCompression(quality_lower=60, quality_upper=100, p=0.5),
                 GaussNoise(p=0.1),
                 GaussianBlur(blur_limit=3, p=0.05),
@@ -65,7 +65,7 @@ class DFDCDatasetNPZ(Dataset):
             ])
         elif mode == 'valid':
             return Compose([
-                LongestMaxSize(size, size),
+                LongestMaxSize(size),
                 PadIfNeeded(min_height=size, min_width=size, border_mode=cv2.BORDER_CONSTANT),
                 Normalize(
                     mean=[0.485, 0.456, 0.406],
