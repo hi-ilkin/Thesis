@@ -120,7 +120,7 @@ def extract_box(image, coordinates, output_path=None):
         crop.save(output_path)
     return crop
 
-
+@timeit
 def run_in_parallel(func, args) -> list:
     """
     Runs given function for each of the items in the argument list in parallel.
@@ -132,7 +132,7 @@ def run_in_parallel(func, args) -> list:
     results = []
     with Pool(processes=5) as pool:
         for item in args:
-            result = pool.apply_async(func, (item,))
+            result = pool.apply_async(func, item)
             results.append(result)
 
         return [result.get() for result in results]
