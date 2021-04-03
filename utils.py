@@ -130,7 +130,7 @@ def run_in_parallel(func, args) -> list:
     :return: List, Results of all runs
     """
     results = []
-    with Pool(processes=5) as pool:
+    with Pool(processes=11) as pool:
         for item in args:
             result = pool.apply_async(func, item)
             results.append(result)
