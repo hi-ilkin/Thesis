@@ -1,9 +1,15 @@
 import timm
 import torch
+import wandb
+import numpy as np
 from torch import nn
 from torch.optim import Adam
 import pytorch_lightning as pl
 from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
+from sklearn.metrics import f1_score, recall_score, precision_score, accuracy_score, confusion_matrix, \
+    classification_report
+
+from pytorch_lightning.metrics import Accuracy, Precision, Recall, MetricCollection, ConfusionMatrix, F1
 
 
 def get_criterion(weights):
@@ -34,15 +40,37 @@ class Models(pl.LightningModule):
         images, labels = train_batch
         y_preds = self.model(images)
         loss = self.criterion(y_preds, labels)
-        self.log('train_loss', loss)
+        self.log('train_loss', loss, prog_bar=True)
         return loss
 
     def validation_step(self, val_batch, batch_idx):
         images, labels = val_batch
         y_preds = self.model(images)
+        logits = torch.argmax(torch.sigmoid(y_preds.squeeze()), dim=1)
+
         loss = self.criterion(y_preds, labels)
-        self.log('val_loss', loss)
-        return loss
+        self.log('val_loss', loss, prog_bar=True)
+        return {'val_loss': loss, 'preds': logits.cpu().numpy(), 'target': labels.cpu().numpy()}
+
+    def validation_epoch_end(self, outputs):
+        preds = np.concatenate([tmp['preds'] for tmp in outputs])
+        targets = np.concatenate([tmp['target'] for tmp in outputs])
+
+        self.log_dict(self.get_metrics_with_sklearn(preds, targets))
+        wandb.log(
+            {"conf_mat": wandb.plot.confusion_matrix(y_true=targets, preds=preds, class_names=['fake', 'real'])})
+
+    def get_metrics_with_sklearn(self, y_preds, targets, prefix='val'):
+        """
+        Sklearn implementation of metrics.
+        Returns : F1_score, recall and precision for each class
+        """
+
+        res = {}
+        for c in range(2):
+            for f in [f1_score, recall_score, precision_score]:
+                res[f'{prefix}_{f.__name__}_{c}'] = round(f(targets, y_preds, pos_label=c), 3)
+        return res
 
     def backward(self, loss, optimizer, optimizer_idx, *args, **kwargs):
         loss.backward()
@@ -61,6 +89,9 @@ class EfficientNet(Models):
         n_features = self.model.classifier.in_features
         self.model.classifier = nn.Linear(n_features, self.config.target_size)
         self.criterion = get_criterion(self.config.output_weights)
+
+        self.val_metric = MetricCollection(
+            [Accuracy(), Precision(is_multiclass=False), Recall(is_multiclass=False), F1(num_classes=2)])
 
 
 class DeiT(Models):
