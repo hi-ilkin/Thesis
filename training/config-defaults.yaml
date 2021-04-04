@@ -30,22 +30,22 @@ load_checkpoint:
   value: false
 use_chunks:
   desc: If true, load trainer from .npz chunks, else from images. If chunks enabled, dataloaders will be loaded every time
-  value: true
+  value: false
 
 # training configuration
 project:
-  value: DFDC-test
+  value: DFDC-phase-2
 model_name:
-  value: LR-check
+  value: EfficientNetB0-v1
 notes:
   desc: Add run specific notes here. Don't forget to delete when starting new run
-  value: With this run LongestMaxSize resizing and CosineAnnealingWarmRestarts LR scheduler was added
+  value: training by using images instead of npz
 resume_from:
-  desc: checkpoint to continue from
-  value: sample-efnet0-epoch=169-val_loss=0.5782.ckpt
+  desc: checkpoint to continue from. None if you want start from scracth
+  value: None
 epochs:
-  desc: Number of epochs to train. Should be chunk size * epoch
-  value: 5
+  desc: Number of epochs to train. Should be chunk size * epoch if chunks used
+  value: 10
 target_size:
   desc: Output size
   value: 2
@@ -63,6 +63,9 @@ precision:
 accumulate_grad_batches:
   desc: Accumulates grads every k batches
   value: 1
+limit_train_batches:
+  desc: limiting training batches per epoch. float - percent, int - batch count. Default 1.0 (all batches)
+  value: 1.0
 # lr scheduler setup
 lr_scheduler:
   desc: Name of the learning rate scheduler
@@ -72,7 +75,7 @@ lr_min:
   value: 0.00001
 lr_max:
   desc: maximum lr rate
-  value: 0.01
+  value: 0.001
 
 ## CosineAnnealingWarmRestarts specific params
 lr_t0:
@@ -88,4 +91,4 @@ val_freq:
   value: 1
 log_freq:
   desc: Frequency of logging in steps
-  value: 50
+  value: 10
