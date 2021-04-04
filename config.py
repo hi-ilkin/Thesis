@@ -33,6 +33,12 @@ CHUNK_PATH = f'{root}/chunks/chunk_*'
 BEST_MODEL_PATH = f'{root}/models/efn4-best-cfg1.tar'
 CHECKPOINT_PATH = f'{root}/checkpoints'
 
+TRAIN_IMAGES = f'{root}/train_images'
+TRAIN_LABELS = f'{root}/train_labels.csv'
+
+VAL_IMAGES = f'{root}/val_images'
+VAL_LABELS = f'{root}/val_labels.csv'
+
 zpart = part
 if part < 10:
     zpart = f'0{part}'

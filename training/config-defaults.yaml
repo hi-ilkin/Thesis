@@ -28,6 +28,9 @@ load_pretrained:
 load_checkpoint:
   desc: continue from checkpoint
   value: false
+use_chunks:
+  desc: If true, load trainer from .npz chunks, else from images. If chunks enabled, dataloaders will be loaded every time
+  value: true
 
 # training configuration
 project:
@@ -42,7 +45,7 @@ resume_from:
   value: sample-efnet0-epoch=169-val_loss=0.5782.ckpt
 epochs:
   desc: Number of epochs to train. Should be chunk size * epoch
-  value: 200
+  value: 5
 target_size:
   desc: Output size
   value: 2

@@ -42,7 +42,7 @@ def train_fn():
     trainer = pl.Trainer(gpus=params.gpus, precision=params.precision,
                          logger=wandb_logger,
                          accumulate_grad_batches=params.accumulate_grad_batches,
-                         reload_dataloaders_every_epoch=True,
+                         reload_dataloaders_every_epoch=params.use_images,
                          check_val_every_n_epoch=params.val_freq,
                          log_every_n_steps=params.log_freq,
                          resume_from_checkpoint=None,

@@ -1,18 +1,51 @@
 import glob
+import os
 from random import shuffle
 from typing import Optional
 
 import cv2
-import numpy as np
 import torch
+import numpy as np
+import pandas as pd
 from torch.utils.data import Dataset
 import pytorch_lightning as pl
 import config as path_config
-from albumentations import Compose, RandomBrightnessContrast, HorizontalFlip, HueSaturationValue, OneOf, ToGray, \
-    ShiftScaleRotate, ImageCompression, PadIfNeeded, GaussNoise, GaussianBlur, Resize, Normalize, LongestMaxSize
-from albumentations.pytorch import ToTensorV2
 
 from local_properties import NUM_WORKERS
+from training.transformers import get_transformer
+
+
+class DFDCDatasetImages(Dataset):
+    def __init__(self, mode='train'):
+
+        if mode == 'train':
+            self.path = path_config.TRAIN_IMAGES
+            self.df = pd.read_csv(path_config.TRAIN_LABELS)
+        elif mode == 'valid':
+            self.path = path_config.VAL_IMAGES
+            self.df = pd.read_csv(path_config.VAL_LABELS)
+
+        self.names = self.df['names'].values
+        self.label_names = self.df['labels'].values
+        self.labels = np.where(self.label_names == 'REAL', 1, 0)
+        self.transform = get_transformer(mode)
+
+    def __len__(self):
+        return len(self.df)
+
+    def __getitem__(self, idx):
+        label = torch.tensor(self.labels[idx]).long()
+
+        file_name = self.names[idx]
+        file_path = os.path.join(self.path, file_name)
+        image = cv2.imread(file_path)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+        if self.transform:
+            augmented = self.transform(image=image)
+            image = augmented['image']
+
+        return image, label
 
 
 class DFDCDatasetNPZ(Dataset):
@@ -28,7 +61,7 @@ class DFDCDatasetNPZ(Dataset):
         self.labels = np.where(self.label_names == 'REAL', 1, 0)
         self.transform_mode = mode
         if mode is not None:
-            self.transformer = self.get_transformer(mode=mode)
+            self.transformer = get_transformer(mode=mode)
 
     def __getitem__(self, idx):
         label = torch.tensor(self.labels[idx]).long()
@@ -41,38 +74,6 @@ class DFDCDatasetNPZ(Dataset):
 
     def __len__(self):
         return len(self.data)
-
-    @staticmethod
-    def get_transformer(mode, size=224):
-        if mode == 'train':
-            return Compose([
-                LongestMaxSize(size),
-                ImageCompression(quality_lower=60, quality_upper=100, p=0.5),
-                GaussNoise(p=0.1),
-                GaussianBlur(blur_limit=3, p=0.05),
-                HorizontalFlip(),
-                # TODO: IsotropicResize
-                PadIfNeeded(min_height=size, min_width=size, border_mode=cv2.BORDER_CONSTANT),
-                OneOf([RandomBrightnessContrast(), HueSaturationValue()], p=0.7),  # FancyPCA() is missing
-                ToGray(p=0.2),
-                ShiftScaleRotate(shift_limit=0.1, scale_limit=0.2, rotate_limit=10, border_mode=cv2.BORDER_CONSTANT,
-                                 p=0.5),
-                Normalize(
-                    mean=[0.485, 0.456, 0.406],
-                    std=[0.229, 0.224, 0.225]
-                ),
-                ToTensorV2()
-            ])
-        elif mode == 'valid':
-            return Compose([
-                LongestMaxSize(size),
-                PadIfNeeded(min_height=size, min_width=size, border_mode=cv2.BORDER_CONSTANT),
-                Normalize(
-                    mean=[0.485, 0.456, 0.406],
-                    std=[0.229, 0.224, 0.225]
-                ),
-                ToTensorV2()
-            ])
 
 
 class DFDCLightningDataset(pl.LightningDataModule):
@@ -96,7 +97,11 @@ class DFDCLightningDataset(pl.LightningDataModule):
         print(f'Validation: {self.valid_path}')
 
     def train_dataloader(self):
-        self.dataset = DFDCDatasetNPZ(self.train_paths[self.current_chunk_idx], mode='train')
+        if self.config.use_chunks:
+            self.dataset = DFDCDatasetNPZ(self.train_paths[self.current_chunk_idx], mode='train')
+        else:
+            self.dataset = DFDCDatasetImages(mode='train')
+
         loader = torch.utils.data.DataLoader(
             self.dataset,
             batch_size=self.config.batch_size,
@@ -105,11 +110,16 @@ class DFDCLightningDataset(pl.LightningDataModule):
             pin_memory=True
         )
 
-        self.current_chunk_idx = (self.current_chunk_idx + 1) % len(self.train_paths)
+        if not self.config.use_images:
+            self.current_chunk_idx = (self.current_chunk_idx + 1) % len(self.train_paths)
         return loader
 
     def val_dataloader(self):
-        self.dataset = DFDCDatasetNPZ(self.valid_path, mode='valid')
+        if not self.config.use_chunks:
+            self.dataset = DFDCDatasetNPZ(self.valid_path, mode='valid')
+        else:
+            self.dataset = DFDCDatasetImages(mode='valid')
+
         loader = torch.utils.data.DataLoader(
             self.dataset,
             batch_size=self.config.batch_size,
