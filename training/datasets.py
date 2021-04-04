@@ -17,7 +17,7 @@ from training.transformers import get_transformer
 
 class DFDCDatasetImages(Dataset):
     def __init__(self, mode='train'):
-
+        print(f'Loading data {mode}')
         if mode == 'train':
             self.path = path_config.TRAIN_IMAGES
             self.df = pd.read_csv(path_config.TRAIN_LABELS)
@@ -110,7 +110,7 @@ class DFDCLightningDataset(pl.LightningDataModule):
             pin_memory=True
         )
 
-        if not self.config.use_images:
+        if self.config.use_chunks:
             self.current_chunk_idx = (self.current_chunk_idx + 1) % len(self.train_paths)
         return loader
 

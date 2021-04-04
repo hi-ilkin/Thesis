@@ -42,13 +42,14 @@ def train_fn():
     trainer = pl.Trainer(gpus=params.gpus, precision=params.precision,
                          logger=wandb_logger,
                          accumulate_grad_batches=params.accumulate_grad_batches,
-                         reload_dataloaders_every_epoch=params.use_images,
+                         reload_dataloaders_every_epoch=params.use_chunks,
                          check_val_every_n_epoch=params.val_freq,
                          log_every_n_steps=params.log_freq,
                          resume_from_checkpoint=None,
                          callbacks=[checkpoint_callback, lr_monitor_callback],
                          max_epochs=params.epochs,
                          default_root_dir=config.CHECKPOINT_PATH,
+                         limit_train_batches=params.limit_train_batches
                          )
     trainer.fit(model, dataset)
 
