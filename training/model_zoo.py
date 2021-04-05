@@ -3,9 +3,9 @@ import torch
 import wandb
 import numpy as np
 from torch import nn
-from torch.optim import Adam
+from torch.optim import Adam, SGD
 import pytorch_lightning as pl
-from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
+from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts, CyclicLR
 from sklearn.metrics import f1_score, recall_score, precision_score, accuracy_score, confusion_matrix, \
     classification_report
 
@@ -26,10 +26,27 @@ class Models(pl.LightningModule):
         return self.model(x)
 
     def configure_optimizers(self):
-        optimizer = Adam(self.parameters(), lr=self.config.lr_min)
-        scheduler = CosineAnnealingWarmRestarts(optimizer,
-                                                T_0=self.config.lr_t0,
-                                                T_mult=self.config.lr_tmult)
+        if self.config.opt_name == 'Adam':
+            optimizer = Adam(self.parameters(), lr=self.config.lr_max)
+        elif self.config.opt_name == 'SGD':
+            optimizer = SGD(self.parameters(), self.config.lr_max)
+        else:
+            raise NameError("Unsupported optimizer is chosen")
+
+        if self.config.lr_scheduler == 'CosineAnnealingWarmRestarts':
+            scheduler = CosineAnnealingWarmRestarts(optimizer,
+                                                    T_0=self.config.lr_t0,
+                                                    T_mult=self.config.lr_tmult)
+        elif self.config.lr_scheduler == 'cyclic2':
+            scheduler = CyclicLR(optimizer,
+                                 base_lr=self.config.lr_min,
+                                 max_lr=self.config.lr_max,
+                                 step_size_up=self.config.lr_t0,
+                                 mode=self.config.lr_mode,
+                                 cycle_momentum=False)
+        else:
+            raise NameError(
+                'Wrong scheduler name. Currently supported: ["cyclic", "cyclic2", "CosineAnnealingWarmRestarts"]')
 
         return {
             'optimizer': optimizer,
@@ -57,6 +74,7 @@ class Models(pl.LightningModule):
         targets = np.concatenate([tmp['target'] for tmp in outputs])
 
         self.log_dict(self.get_metrics_with_sklearn(preds, targets))
+        print(self.optimizers().param_groups[0]['lr'])
         wandb.log(
             {"conf_mat": wandb.plot.confusion_matrix(y_true=targets, preds=preds, class_names=['fake', 'real'])})
 
