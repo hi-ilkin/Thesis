@@ -1,7 +1,7 @@
 import cv2
 
 from albumentations import Compose, RandomBrightnessContrast, HorizontalFlip, HueSaturationValue, OneOf, ToGray, \
-    ShiftScaleRotate, ImageCompression, PadIfNeeded, GaussNoise, GaussianBlur, Normalize, LongestMaxSize
+    ShiftScaleRotate, ImageCompression, PadIfNeeded, GaussNoise, GaussianBlur, Normalize, LongestMaxSize, CoarseDropout
 from albumentations.pytorch import ToTensorV2
 
 
@@ -14,6 +14,7 @@ def get_transformer(mode, size=224):
             GaussianBlur(blur_limit=3, p=0.05),
             HorizontalFlip(),
             # TODO: IsotropicResize
+            CoarseDropout(max_holes=1, max_width=32, max_height=32),
             PadIfNeeded(min_height=size, min_width=size, border_mode=cv2.BORDER_CONSTANT),
             OneOf([RandomBrightnessContrast(), HueSaturationValue()], p=0.7),  # FancyPCA() is missing
             ToGray(p=0.2),
