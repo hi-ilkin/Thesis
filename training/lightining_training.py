@@ -10,7 +10,7 @@ from pytorch_lightning.loggers import WandbLogger
 import config
 import local_properties
 from training.datasets import DFDCLightningDataset
-from training.model_zoo import EfficientNet
+from training.model_zoo import DFDCModels
 
 os.environ['REQUESTS_CA_BUNDLE'] = local_properties.SSL_CERTIFICATE_PATH
 
@@ -18,22 +18,22 @@ os.environ['REQUESTS_CA_BUNDLE'] = local_properties.SSL_CERTIFICATE_PATH
 def headlines():
     with open('config-defaults.yaml') as file:
         data = yaml.load(file, Loader=yaml.FullLoader)
-        return data['project']['value'], data['model_name']['value']
+        return data['project']['value'], data['run_name']['value']
 
 
 def train_fn():
     project, name = headlines()
     wandb_logger = WandbLogger(project=project, name=name)
     params = wandb_logger.experiment.config
+    run_id = wandb_logger.experiment._run_id
 
-    model = EfficientNet(params, version='b0')
-    # model = DeiT()
+    model = DFDCModels(params)
 
     lr_monitor_callback = LearningRateMonitor(logging_interval='epoch')
     checkpoint_callback = ModelCheckpoint(
         monitor='val_loss',
         dirpath=f'{config.CHECKPOINT_PATH}',
-        filename=f'{params.model_name}' + '-{epoch:02d}-{val_loss:.4f}',
+        filename=f'model={params.model_name}-run_id={run_id}' + '-{epoch:02d}-{val_loss:.4f}',
         save_last=True,
         mode='min',
     )
