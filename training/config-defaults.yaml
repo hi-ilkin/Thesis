@@ -21,7 +21,7 @@ image_size:
 # dataset specific config
 batch_size:
   desc: Size of each mini-batch. EB0 - 256 too big for Titan, EB7 - 32 is enough
-  value: 32
+  value: 64
 load_pretrained:
   desc: load original pretrained model
   value: true
@@ -34,18 +34,22 @@ use_chunks:
 
 # training configuration
 project:
-  value: DFDC-small
+  value: DFDC-test
 model_name:
-  value: EfficientNetB7-v2.0
+  desc: timm model name
+  value: tf_efficientnet_b0_ns
+run_name:
+  desc: name displayed at wandb
+  value: efnet-b0-ns
 notes:
   desc: Add run specific notes here. Don't forget to delete when starting new run
-  value: All reals kept, fakes were downsampled - every 5th image from original dataset was chosen
+  value: increasing cut size to 32
 resume_from:
   desc: checkpoint to continue from. None if you want start from scracth
   value: None
 epochs:
   desc: Number of epochs to train. Should be chunk size * epoch if chunks used
-  value: 10
+  value: 5
 target_size:
   desc: Output size
   value: 2

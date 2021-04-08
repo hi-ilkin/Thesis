@@ -6,10 +6,8 @@ from torch import nn
 from torch.optim import Adam, SGD
 import pytorch_lightning as pl
 from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts, CyclicLR, StepLR
-from sklearn.metrics import f1_score, recall_score, precision_score, accuracy_score, confusion_matrix, \
-    classification_report
-
-from pytorch_lightning.metrics import Accuracy, Precision, Recall, MetricCollection, ConfusionMatrix, F1
+from sklearn.metrics import f1_score, recall_score, precision_score
+from pytorch_lightning.metrics import Accuracy, Precision, Recall, MetricCollection, F1
 
 
 def get_criterion(weights):
@@ -18,9 +16,29 @@ def get_criterion(weights):
     return nn.CrossEntropyLoss(weight=torch.FloatTensor(weights).cuda())
 
 
-class Models(pl.LightningModule):
-    def __int__(self):
-        super(Models, self).__int__()
+class DFDCModels(pl.LightningModule):
+
+    def __init__(self, config):
+        super().__init__()
+        self.config = config
+        self.model_name = self.config.model_name
+        if 'efficient' in self.model_name:
+            self.model = timm.create_model(self.model_name, pretrained=self.config.load_pretrained)
+            n_features = self.model.classifier.in_features
+            self.model.classifier = nn.Linear(n_features, self.config.target_size)
+        elif self.model_name == 'deit':
+            self.model = torch.hub.load('facebookresearch/deit:main', 'deit_base_patch16_224',
+                                        pretrained=self.config.load_pretrained)
+
+            n_features = self.model.head.in_features
+            self.model.head = nn.Linear(n_features, self.config.target_size)
+
+        else:
+            RuntimeError(f"Unknown model: {self.model_name}")
+
+        self.criterion = get_criterion(self.config.output_weights)
+        self.val_metric = MetricCollection(
+            [Accuracy(), Precision(is_multiclass=False), Recall(is_multiclass=False), F1(num_classes=2)])
 
     def forward(self, x):
         return self.model(x)
@@ -97,33 +115,3 @@ class Models(pl.LightningModule):
 
     def backward(self, loss, optimizer, optimizer_idx, *args, **kwargs):
         loss.backward()
-
-
-class EfficientNet(Models):
-    def __init__(self, config, version='b0'):
-        super().__init__()
-        self.config = config
-        if version in ['b0', 'b1', 'b2', 'b3']:
-            model_name = f'efficientnet_{version}'
-        else:
-            model_name = f'tf_efficientnet_{version}'
-
-        self.model = timm.create_model(model_name, pretrained=self.config.load_pretrained)
-        n_features = self.model.classifier.in_features
-        self.model.classifier = nn.Linear(n_features, self.config.target_size)
-        self.criterion = get_criterion(self.config.output_weights)
-
-        self.val_metric = MetricCollection(
-            [Accuracy(), Precision(is_multiclass=False), Recall(is_multiclass=False), F1(num_classes=2)])
-
-
-class DeiT(Models):
-    def __init__(self, config):
-        super().__init__()
-        self.config = config
-
-        self.model = torch.hub.load('facebookresearch/deit:main', 'deit_base_patch16_224',
-                                    pretrained=self.config.load_pretrained)
-        n_features = self.model.head.in_features
-        self.model.head = nn.Linear(n_features, self.config.traget_size)
-        self.criterion = get_criterion(self.config.output_weights)
