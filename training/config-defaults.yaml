@@ -10,7 +10,7 @@ margin:
   value: 30
 thresholds_mtcnn:
   desc: threshold value for MTCNN detector
-  value: [ 0.7, 0.8, 0.8 ]
+  value: None
 min_face_size:
   desc: minimum accepted detected face size
   value: 60
@@ -20,8 +20,8 @@ image_size:
 
 # dataset specific config
 batch_size:
-  desc: Size of each mini-batch. EB0 - 256 too big for Titan
-  value: 128
+  desc: Size of each mini-batch. EB0 - 256 too big for Titan, EB7 - 32 is enough
+  value: 32
 load_pretrained:
   desc: load original pretrained model
   value: true
@@ -34,12 +34,12 @@ use_chunks:
 
 # training configuration
 project:
-  value: DFDC-test
+  value: DFDC-small
 model_name:
-  value: EfficientNetB0-v2
+  value: EfficientNetB7-v2.0
 notes:
   desc: Add run specific notes here. Don't forget to delete when starting new run
-  value: training by using images instead of npz
+  value: All reals kept, fakes were downsampled - every 5th image from original dataset was chosen
 resume_from:
   desc: checkpoint to continue from. None if you want start from scracth
   value: None
@@ -51,7 +51,7 @@ target_size:
   value: 2
 output_weights:
   desc: output weights for inbalanced dataset
-  value: [ 0.2, 0.8 ]
+  value: None
 device:
   desc: use of GPU or CPU
   value: cuda
@@ -65,7 +65,7 @@ accumulate_grad_batches:
   value: 1
 limit_train_batches:
   desc: limiting training batches per epoch. float - percent, int - batch count. Default 1.0 (all batches)
-  value: 5
+  value: 1.0
 
 # optimizers
 opt_name:
@@ -74,22 +74,25 @@ opt_name:
 
 # lr scheduler setup
 lr_scheduler:
-  desc: Name of the learning rate scheduler - [cyclic, cyclic2, CosineAnnealingWarmRestarts]
-  value: cyclic2
+  desc: Name of the learning rate scheduler - [step, cyclic, cyclic2, CosineAnnealingWarmRestarts]
+  value: step
 lr_min:
   desc: minnimum lr rate
   value: 0.00001
 lr_max:
   desc: maximum lr rate
-  value: 0.005
+  value: 0.001
+lr_gamma:
+  desc: multipler for learning rate scheduler
+  value: 0.5
 
 ## Cyclic specific params
 lr_mode:
   desc: Mode for cyclic LR
   value: triangular2
 lr_step_size:
-  desc: Number of training iterations in the increasing half of a cycle
-  value: 400
+  desc: Number of training epochs in the increasing half of a cycle
+  value: 2
 
 ## CosineAnnealingWarmRestarts specific params
 lr_t0:

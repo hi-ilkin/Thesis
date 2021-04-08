@@ -5,7 +5,7 @@ import numpy as np
 from torch import nn
 from torch.optim import Adam, SGD
 import pytorch_lightning as pl
-from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts, CyclicLR
+from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts, CyclicLR, StepLR
 from sklearn.metrics import f1_score, recall_score, precision_score, accuracy_score, confusion_matrix, \
     classification_report
 
@@ -41,9 +41,14 @@ class Models(pl.LightningModule):
             scheduler = CyclicLR(optimizer,
                                  base_lr=self.config.lr_min,
                                  max_lr=self.config.lr_max,
-                                 step_size_up=self.config.lr_t0,
+                                 step_size_up=self.config.lr_step_size,
                                  mode=self.config.lr_mode,
                                  cycle_momentum=False)
+        elif self.config.lr_scheduler == 'step':
+            scheduler = StepLR(optimizer,
+                               step_size=self.config.lr_step_size,
+                               gamma=self.config.lr_gamma
+                               )
         else:
             raise NameError(
                 'Wrong scheduler name. Currently supported: ["cyclic", "cyclic2", "CosineAnnealingWarmRestarts"]')
