@@ -3,8 +3,8 @@ pandas
 opencv-python
 matplotlib
 facenet-pytorch==2.5.1
-pytorch-lightning
-timm==0.3.2
+pytorch-lightning==1.2.6
+timm==0.4.5
 albumentations==0.5.2
 scikit-learn
 wandb==0.10.23
