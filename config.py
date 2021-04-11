@@ -39,6 +39,9 @@ TRAIN_LABELS = f'{root}/train_labels.csv'
 VAL_IMAGES = f'{root}/val_images'
 VAL_LABELS = f'{root}/val_labels.csv'
 
+TEST_IMAGES = f'{root}/train_images'
+TEST_LABELS = f'{root}/train_labels.csv'
+
 zpart = part
 if part < 10:
     zpart = f'0{part}'

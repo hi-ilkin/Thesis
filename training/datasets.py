@@ -17,13 +17,15 @@ from training.transformers import get_transformer
 
 class DFDCDatasetImages(Dataset):
     def __init__(self, mode='train'):
-        print(f'Loading data {mode}')
         if mode == 'train':
             self.path = path_config.TRAIN_IMAGES
             self.df = pd.read_csv(path_config.TRAIN_LABELS)
         elif mode == 'valid':
             self.path = path_config.VAL_IMAGES
             self.df = pd.read_csv(path_config.VAL_LABELS)
+        elif mode == 'test':
+            self.path = path_config.TEST_IMAGES
+            self.df = pd.read_csv(path_config.TEST_LABELS)
 
         self.names = self.df['names'].values
         self.label_names = self.df['labels'].values
@@ -114,11 +116,11 @@ class DFDCLightningDataset(pl.LightningDataModule):
             self.current_chunk_idx = (self.current_chunk_idx + 1) % len(self.train_paths)
         return loader
 
-    def val_dataloader(self):
-        if not self.config.use_chunks:
-            self.dataset = DFDCDatasetNPZ(self.valid_path, mode='valid')
+    def val_dataloader(self, mode='valid'):
+        if self.config.use_chunks:
+            self.dataset = DFDCDatasetNPZ(self.valid_path, mode=mode)
         else:
-            self.dataset = DFDCDatasetImages(mode='valid')
+            self.dataset = DFDCDatasetImages(mode=mode)
 
         loader = torch.utils.data.DataLoader(
             self.dataset,
@@ -128,3 +130,6 @@ class DFDCLightningDataset(pl.LightningDataModule):
             pin_memory=True
         )
         return loader
+
+    def test_dataloader(self):
+        return self.val_dataloader(mode='test')

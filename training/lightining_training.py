@@ -52,6 +52,7 @@ def train_fn():
                          limit_train_batches=params.limit_train_batches
                          )
     trainer.fit(model, dataset)
+    trainer.test()
 
 
 def tune_hyper_params():

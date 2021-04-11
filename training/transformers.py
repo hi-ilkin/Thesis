@@ -26,7 +26,7 @@ def get_transformer(mode, size=224):
             ),
             ToTensorV2()
         ])
-    elif mode == 'valid':
+    elif mode in ['valid', 'test']:
         return Compose([
             LongestMaxSize(size),
             PadIfNeeded(min_height=size, min_width=size, border_mode=cv2.BORDER_CONSTANT),
