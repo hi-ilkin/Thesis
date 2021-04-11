@@ -22,7 +22,8 @@ class DFDCModels(pl.LightningModule):
         super().__init__()
         self.config = config
         self.model_name = self.config.model_name
-        if 'efficient' in self.model_name:
+
+        if 'efficient' in self.model_name or self.model_name.startswith('densenet'):
             self.model = timm.create_model(self.model_name, pretrained=self.config.load_pretrained)
             n_features = self.model.classifier.in_features
             self.model.classifier = nn.Linear(n_features, self.config.target_size)
@@ -32,7 +33,6 @@ class DFDCModels(pl.LightningModule):
 
             n_features = self.model.head.in_features
             self.model.head = nn.Linear(n_features, self.config.target_size)
-
         else:
             RuntimeError(f"Unknown model: {self.model_name}")
 
@@ -83,25 +83,41 @@ class DFDCModels(pl.LightningModule):
         self.log('train_loss', loss, prog_bar=True)
         return loss
 
-    def validation_step(self, val_batch, batch_idx):
+    def validation_step(self, val_batch, batch_idx, prefix='val'):
         images, labels = val_batch
         y_preds = self.model(images)
         logits = torch.argmax(torch.sigmoid(y_preds.squeeze()), dim=1)
 
         loss = self.criterion(y_preds, labels)
-        self.log('val_loss', loss, prog_bar=True)
-        return {'val_loss': loss, 'preds': logits.cpu().numpy(), 'target': labels.cpu().numpy()}
+        self.log(f'{prefix}_loss', loss, prog_bar=True)
+        return {f'{prefix}_loss': loss, 'preds': logits.cpu().numpy(), 'target': labels.cpu().numpy()}
 
-    def validation_epoch_end(self, outputs):
+    def test_step(self, test_batch, batch_idx):
+        return self.validation_step(test_batch, batch_idx, prefix='test')
+
+    def validation_epoch_end(self, outputs, prefix='val'):
         preds = np.concatenate([tmp['preds'] for tmp in outputs])
         targets = np.concatenate([tmp['target'] for tmp in outputs])
 
-        self.log_dict(self.get_metrics_with_sklearn(preds, targets))
-        print(self.optimizers().param_groups[0]['lr'])
-        wandb.log(
-            {"conf_mat": wandb.plot.confusion_matrix(y_true=targets, preds=preds, class_names=['fake', 'real'])})
+        metrics = self.get_metrics_with_sklearn(preds, targets, prefix=prefix)
+        self.log_dict(metrics)
 
-    def get_metrics_with_sklearn(self, y_preds, targets, prefix='val'):
+        if prefix == 'val':
+            conf_mat_name = 'conf_mat'  # for backward compatibility
+        elif prefix == 'test':
+            conf_mat_name = 'test_conf_mat'
+            wandb.log({"Test results": wandb.Table(data=[list(metrics.values())], columns=list(metrics.keys()))})
+        else:
+            conf_mat_name = 'conf_other_mat'
+
+        wandb.log(
+            {conf_mat_name: wandb.plot.confusion_matrix(y_true=targets, preds=preds, class_names=['fake', 'real'])})
+
+    def test_epoch_end(self, outputs):
+        self.validation_epoch_end(outputs, prefix='test')
+
+    @staticmethod
+    def get_metrics_with_sklearn(y_preds, targets, prefix='val'):
         """
         Sklearn implementation of metrics.
         Returns : F1_score, recall and precision for each class
