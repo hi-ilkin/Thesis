@@ -32,7 +32,7 @@ class DFDCModels(pl.LightningModule):
                                         pretrained=self.config.load_pretrained)
 
             n_features = self.model.head.in_features
-            self.model.head = nn.Linear(n_features, self.config.target_size)
+            self.model.head = nn.Sequential(nn.Dropout(0.3), nn.Linear(n_features, self.config.target_size))
         else:
             RuntimeError(f"Unknown model: {self.model_name}")
 
@@ -67,9 +67,12 @@ class DFDCModels(pl.LightningModule):
                                step_size=self.config.lr_step_size,
                                gamma=self.config.lr_gamma
                                )
+        elif self.config.lr_scheduler == 'fixed':
+            print(f"Using {self.config.opt_name} with fixed LR={self.config.lr_max}")
+            return {'optimizer': optimizer}
         else:
             raise NameError(
-                'Wrong scheduler name. Currently supported: ["cyclic", "cyclic2", "CosineAnnealingWarmRestarts"]')
+                'Wrong scheduler name. Currently supported: ["fixed", "cyclic", "cyclic2", "CosineAnnealingWarmRestarts"]')
 
         return {
             'optimizer': optimizer,

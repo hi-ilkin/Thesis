@@ -34,22 +34,22 @@ use_chunks:
 
 # training configuration
 project:
-  value: DFDC-test
+  value: DFDC-phase-5
 model_name:
   desc: timm model name
-  value: tf_efficientnet_b0_ns
+  value: tf_efficientnet_b4_ns
 run_name:
   desc: name displayed at wandb
-  value: efnet-b0-ns
+  value: eb4-setup-5
 notes:
   desc: Add run specific notes here. Don't forget to delete when starting new run
-  value: increasing cut size to 32
+  value: Setup 2.1 + standard augmentation + coarse (p=1, 2x 32x32)
 resume_from:
   desc: checkpoint to continue from. None if you want start from scracth
   value: None
 epochs:
   desc: Number of epochs to train. Should be chunk size * epoch if chunks used
-  value: 5
+  value: 10
 target_size:
   desc: Output size
   value: 2
@@ -78,8 +78,8 @@ opt_name:
 
 # lr scheduler setup
 lr_scheduler:
-  desc: Name of the learning rate scheduler - [step, cyclic, cyclic2, CosineAnnealingWarmRestarts]
-  value: step
+  desc: Name of the learning rate scheduler - [fixed, step, cyclic, cyclic2, CosineAnnealingWarmRestarts]
+  value: fixed
 lr_min:
   desc: minnimum lr rate
   value: 0.00001
