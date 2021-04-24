@@ -16,14 +16,14 @@ from training.transformers import get_transformer
 
 
 class DFDCDatasetImages(Dataset):
-    def __init__(self, mode='train'):
-        if mode == 'train':
+    def __init__(self, data='train', mode='train'):
+        if data == 'train':
             self.path = path_config.TRAIN_IMAGES
             self.df = pd.read_csv(path_config.TRAIN_LABELS)
-        elif mode == 'valid':
+        elif data == 'valid':
             self.path = path_config.VAL_IMAGES
             self.df = pd.read_csv(path_config.VAL_LABELS)
-        elif mode == 'test':
+        elif data == 'test':
             self.path = path_config.TEST_IMAGES
             self.df = pd.read_csv(path_config.TEST_LABELS)
 
@@ -92,17 +92,18 @@ class DFDCLightningDataset(pl.LightningDataModule):
         pass
 
     def prepare_data(self, *args, **kwargs):
-        self.train_paths = glob.glob(path_config.CHUNK_PATH)
-        self.valid_path = self.train_paths.pop(-1)
+        if self.config.use_chunks:
+            self.train_paths = glob.glob(path_config.CHUNK_PATH)
+            self.valid_path = self.train_paths.pop(-1)
 
-        shuffle(self.train_paths)
-        print(f'Validation: {self.valid_path}')
+            shuffle(self.train_paths)
+            print(f'Validation: {self.valid_path}')
 
     def train_dataloader(self):
         if self.config.use_chunks:
             self.dataset = DFDCDatasetNPZ(self.train_paths[self.current_chunk_idx], mode='train')
         else:
-            self.dataset = DFDCDatasetImages(mode='train')
+            self.dataset = DFDCDatasetImages(data='train', mode='train')
 
         loader = torch.utils.data.DataLoader(
             self.dataset,
@@ -116,11 +117,11 @@ class DFDCLightningDataset(pl.LightningDataModule):
             self.current_chunk_idx = (self.current_chunk_idx + 1) % len(self.train_paths)
         return loader
 
-    def val_dataloader(self, mode='valid'):
+    def val_dataloader(self, data='valid', mode='valid'):
         if self.config.use_chunks:
             self.dataset = DFDCDatasetNPZ(self.valid_path, mode=mode)
         else:
-            self.dataset = DFDCDatasetImages(mode=mode)
+            self.dataset = DFDCDatasetImages(data=data, mode=mode)
 
         loader = torch.utils.data.DataLoader(
             self.dataset,
@@ -132,4 +133,4 @@ class DFDCLightningDataset(pl.LightningDataModule):
         return loader
 
     def test_dataloader(self):
-        return self.val_dataloader(mode='test')
+        return self.val_dataloader(data='test', mode='test')
