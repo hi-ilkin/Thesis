@@ -21,7 +21,7 @@ image_size:
 # dataset specific config
 batch_size:
   desc: Size of each mini-batch. EB0 - 256 too big for Titan, EB7 - 32 is enough
-  value: 64
+  value: 128
 load_pretrained:
   desc: load original pretrained model
   value: true
@@ -37,13 +37,13 @@ project:
   value: DFDC-phase-5
 model_name:
   desc: timm model name
-  value: tf_efficientnet_b4_ns
+  value: tf_efficientnet_b1_ns
 run_name:
   desc: name displayed at wandb
-  value: eb4-setup-5
+  value: eb4-setup-13
 notes:
   desc: Add run specific notes here. Don't forget to delete when starting new run
-  value: Setup 2.1 + standard augmentation + coarse (p=1, 2x 32x32)
+  value: Setup 3 + eb1
 resume_from:
   desc: checkpoint to continue from. None if you want start from scracth
   value: None
@@ -70,6 +70,9 @@ accumulate_grad_batches:
 limit_train_batches:
   desc: limiting training batches per epoch. float - percent, int - batch count. Default 1.0 (all batches)
   value: 1.0
+swa:
+  desc: stochastic weight avgeraging
+  value: false
 
 # optimizers
 opt_name:

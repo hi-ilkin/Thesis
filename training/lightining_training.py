@@ -1,5 +1,5 @@
 import os
-
+import time
 import wandb
 import yaml
 import pytorch_lightning as pl
@@ -37,7 +37,7 @@ def train_fn():
         save_last=True,
         mode='min',
     )
-
+    print(params.swa, type(params.swa))
     dataset = DFDCLightningDataset(params)
     trainer = pl.Trainer(gpus=params.gpus, precision=params.precision,
                          logger=wandb_logger,
@@ -49,7 +49,8 @@ def train_fn():
                          callbacks=[checkpoint_callback, lr_monitor_callback],
                          max_epochs=params.epochs,
                          default_root_dir=config.CHECKPOINT_PATH,
-                         limit_train_batches=params.limit_train_batches
+                         limit_train_batches=params.limit_train_batches,
+                         stochastic_weight_avg=params.swa
                          )
     trainer.fit(model, dataset)
     trainer.test()
@@ -82,6 +83,8 @@ def tune_hyper_params():
 
 if __name__ == '__main__':
     seed_everything(99)
+    delay = input("Delay: ")
+    time.sleep(eval(delay))
 
     wandb.login(key=local_properties.WANDB_KEY)
     # tune_hyper_params()
