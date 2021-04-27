@@ -7,7 +7,8 @@ import cv2
 import torch
 import numpy as np
 import pandas as pd
-from torch.utils.data import Dataset
+import wandb
+from torch.utils.data import Dataset, DataLoader
 import pytorch_lightning as pl
 import config as path_config
 
@@ -80,7 +81,7 @@ class DFDCDatasetNPZ(Dataset):
 
 class DFDCLightningDataset(pl.LightningDataModule):
 
-    def __init__(self, config):
+    def __init__(self, config: wandb.config):
         super(DFDCLightningDataset, self).__init__()
         self.config = config
         self.train_paths = None
@@ -99,13 +100,13 @@ class DFDCLightningDataset(pl.LightningDataModule):
             shuffle(self.train_paths)
             print(f'Validation: {self.valid_path}')
 
-    def train_dataloader(self):
+    def train_dataloader(self) -> DataLoader:
         if self.config.use_chunks:
             self.dataset = DFDCDatasetNPZ(self.train_paths[self.current_chunk_idx], mode='train')
         else:
             self.dataset = DFDCDatasetImages(data='train', mode='train')
 
-        loader = torch.utils.data.DataLoader(
+        loader = DataLoader(
             self.dataset,
             batch_size=self.config.batch_size,
             shuffle=True,
@@ -117,13 +118,13 @@ class DFDCLightningDataset(pl.LightningDataModule):
             self.current_chunk_idx = (self.current_chunk_idx + 1) % len(self.train_paths)
         return loader
 
-    def val_dataloader(self, data='valid', mode='valid'):
+    def val_dataloader(self, data='valid', mode='valid') -> DataLoader:
         if self.config.use_chunks:
             self.dataset = DFDCDatasetNPZ(self.valid_path, mode=mode)
         else:
             self.dataset = DFDCDatasetImages(data=data, mode=mode)
 
-        loader = torch.utils.data.DataLoader(
+        loader = DataLoader(
             self.dataset,
             batch_size=self.config.batch_size,
             shuffle=False,
@@ -132,5 +133,5 @@ class DFDCLightningDataset(pl.LightningDataModule):
         )
         return loader
 
-    def test_dataloader(self):
+    def test_dataloader(self) -> DataLoader:
         return self.val_dataloader(data='test', mode='test')

@@ -7,7 +7,6 @@ from torch.optim import Adam, SGD
 import pytorch_lightning as pl
 from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts, CyclicLR, StepLR
 from sklearn.metrics import f1_score, recall_score, precision_score
-from pytorch_lightning.metrics import Accuracy, Precision, Recall, MetricCollection, F1
 
 
 def get_criterion(weights):
@@ -37,8 +36,6 @@ class DFDCModels(pl.LightningModule):
             RuntimeError(f"Unknown model: {self.model_name}")
 
         self.criterion = get_criterion(self.config.output_weights)
-        self.val_metric = MetricCollection(
-            [Accuracy(), Precision(is_multiclass=False), Recall(is_multiclass=False), F1(num_classes=2)])
 
     def forward(self, x):
         return self.model(x)
