@@ -1,12 +1,13 @@
 import timm
 import torch
 import wandb
-import numpy as np
+import pandas as pd
 from torch import nn
 from torch.optim import Adam, SGD
 import pytorch_lightning as pl
 from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts, CyclicLR, StepLR
 from sklearn.metrics import f1_score, recall_score, precision_score
+import config as path_config
 
 
 def get_criterion(weights):
@@ -77,27 +78,39 @@ class DFDCModels(pl.LightningModule):
         }
 
     def training_step(self, train_batch, batch_idx):
-        images, labels = train_batch
+        images = train_batch['image']
+        labels = train_batch['label']
+
         y_preds = self.model(images)
         loss = self.criterion(y_preds, labels)
         self.log('train_loss', loss, prog_bar=True)
         return loss
 
     def validation_step(self, val_batch, batch_idx, prefix='val'):
-        images, labels = val_batch
+        images = val_batch['image']
+        labels = val_batch['label']
+        im_paths = val_batch['path']
+
         y_preds = self.model(images)
         logits = torch.argmax(torch.sigmoid(y_preds.squeeze()), dim=1)
 
         loss = self.criterion(y_preds, labels)
         self.log(f'{prefix}_loss', loss, prog_bar=True)
-        return {f'{prefix}_loss': loss, 'preds': logits.cpu().numpy(), 'target': labels.cpu().numpy()}
+        return {
+            f'{prefix}_loss': loss,
+            'preds': logits.cpu().numpy(),
+            'target': labels.cpu().numpy(),
+            'paths': im_paths}
 
     def test_step(self, test_batch, batch_idx):
         return self.validation_step(test_batch, batch_idx, prefix='test')
 
     def validation_epoch_end(self, outputs, prefix='val'):
-        preds = np.concatenate([tmp['preds'] for tmp in outputs])
-        targets = np.concatenate([tmp['target'] for tmp in outputs])
+        preds, targets, paths = [], [], []
+        for output in outputs:
+            preds.extend(output['preds'])
+            targets.extend(output['target'])
+            paths.extend(output['paths'])
 
         metrics = self.get_metrics_with_sklearn(preds, targets, prefix=prefix)
         self.log_dict(metrics)
@@ -105,6 +118,8 @@ class DFDCModels(pl.LightningModule):
         if prefix == 'val':
             conf_mat_name = 'conf_mat'  # for backward compatibility
         elif prefix == 'test':
+            pd.DataFrame({'paths': paths, 'preds': preds, 'targets': targets}) \
+                .to_csv(f'{path_config.TEST_IMG_OUTPUT}/{self.config.model_name}_misclassified.csv', index=False)
             conf_mat_name = 'test_conf_mat'
             wandb.log({"Test results": wandb.Table(data=[list(metrics.values())], columns=list(metrics.keys()))})
         else:

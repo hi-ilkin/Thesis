@@ -37,7 +37,7 @@ def train_fn():
         save_last=True,
         mode='min',
     )
-    print(params.swa, type(params.swa))
+
     dataset = DFDCLightningDataset(params)
     trainer = pl.Trainer(gpus=params.gpus, precision=params.precision,
                          logger=wandb_logger,
@@ -47,13 +47,15 @@ def train_fn():
                          log_every_n_steps=params.log_freq,
                          resume_from_checkpoint=None,
                          callbacks=[checkpoint_callback, lr_monitor_callback],
-                         max_epochs=params.epochs,
+                         max_epochs=0,
                          default_root_dir=config.CHECKPOINT_PATH,
                          limit_train_batches=params.limit_train_batches,
                          stochastic_weight_avg=params.swa
                          )
     trainer.fit(model, dataset)
-    trainer.test()
+
+    print(f'{config.BEST_MODEL_PATH} : {os.path.exists(config.BEST_MODEL_PATH)}')
+    trainer.test(ckpt_path=config.BEST_MODEL_PATH)
 
 
 def tune_hyper_params():

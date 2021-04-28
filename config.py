@@ -53,7 +53,7 @@ DIR_CLUSTERS = f'{root}/outputs/clusters_{part}'
 DIR_COMPARED_FACES = f'{root}/outputs/compare_{part}'
 DIR_FACE_IMAGES = f'{root}/faces'
 
-dirs_to_create = [DIR_CLUSTERS, DIR_COMPARED_FACES, f'{root}/chunks', ZIP_FILE_DST_DIRECTORY]
+dirs_to_create = [DIR_CLUSTERS, DIR_COMPARED_FACES, f'{root}/chunks', ZIP_FILE_DST_DIRECTORY, TEST_IMG_OUTPUT]
 
 for d in dirs_to_create:
     if not os.path.exists(d):
