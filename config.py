@@ -30,14 +30,17 @@ FACE_COORDINATES_PATH = f'{root}/coordinates/face_coordinates_step30_{part}.json
 CLEANED_FACE_COORDINATES_PATH = f'{root}/coordinates/cleaned_coordinates_{part}.json'
 FACE_LABELS_PATH = f'{root}/labels_{part}.csv'
 CHUNK_PATH = f'{root}/chunks/chunk_*'
-BEST_MODEL_PATH = f'{root}/models/efn4-best-cfg1.tar'
+BEST_MODEL_PATH = f'{root}/checkpoints/model=tf_efficientnet_b4_ns-run_id=205c4k9n-epoch=02-val_loss=0.2432.ckpt'
 CHECKPOINT_PATH = f'{root}/checkpoints'
 
 TRAIN_IMAGES = f'{root}/train_images'
-TRAIN_LABELS = f'{root}/train_labels.csv'
+TRAIN_LABELS = f'{root}/train_labels_v2_fakes_downsampled.csv'
 
 VAL_IMAGES = f'{root}/val_images'
-VAL_LABELS = f'{root}/val_labels.csv'
+VAL_LABELS = f'{root}/val_labels_v2.csv'
+
+TEST_IMAGES = f'{root}/test_images'
+TEST_LABELS = f'{root}/test_labels_v2.csv'
 
 TEST_IMG_OUTPUT = f'{root}/misclassified'
 

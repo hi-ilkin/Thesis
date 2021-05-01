@@ -13,13 +13,13 @@ def update_config(part):
         data = f.readlines()
 
     with open('config.py', 'w') as f:
-        data[3] = f'part = {part}\n'
+        data[5] = f'part = {part}\n'
         for line in data:
             f.write(line)
 
 
 def process():
-    for part in range(3, 5):
+    for part in range(40, 41):
         update_config(part)
         time.sleep(1)  # wait until new config file was created
         reload(config)  # re-import module
@@ -39,7 +39,7 @@ def process():
 
         print(f'[{datetime.now()}] STARTING MAIN PROCESSING')
         # main processing part
-        face_extractor_v2.extract_face_coordinates_from_original_videos()
+        # face_extractor_v2.extract_face_coordinates_from_original_videos()
         cleaning_with_coordinate_clustering.run_face_extraction()
 
         print(f'[{datetime.now()}] Processing completed, removing video files')
