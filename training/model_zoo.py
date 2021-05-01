@@ -1,3 +1,5 @@
+import os
+
 import timm
 import torch
 import wandb
@@ -118,8 +120,9 @@ class DFDCModels(pl.LightningModule):
         if prefix == 'val':
             conf_mat_name = 'conf_mat'  # for backward compatibility
         elif prefix == 'test':
+            # TODO: Get name for running models
             pd.DataFrame({'paths': paths, 'preds': preds, 'targets': targets}) \
-                .to_csv(f'{path_config.TEST_IMG_OUTPUT}/{self.config.model_name}_misclassified.csv', index=False)
+                .to_csv(f'{path_config.TEST_IMG_OUTPUT}/{self.config.model_name}_{self.config.run_id}_misclassified.csv', index=False)
             conf_mat_name = 'test_conf_mat'
             wandb.log({"Test results": wandb.Table(data=[list(metrics.values())], columns=list(metrics.keys()))})
         else:

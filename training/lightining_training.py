@@ -27,6 +27,7 @@ def train_fn():
     params = wandb_logger.experiment.config
     run_id = wandb_logger.experiment._run_id
 
+    params.update({'run_id':run_id})
     model = DFDCModels(params)
 
     lr_monitor_callback = LearningRateMonitor(logging_interval='epoch')
@@ -47,15 +48,16 @@ def train_fn():
                          log_every_n_steps=params.log_freq,
                          resume_from_checkpoint=None,
                          callbacks=[checkpoint_callback, lr_monitor_callback],
-                         max_epochs=0,
+                         max_epochs=params.epochs,
                          default_root_dir=config.CHECKPOINT_PATH,
                          limit_train_batches=params.limit_train_batches,
-                         stochastic_weight_avg=params.swa
+                         stochastic_weight_avg=params.swa,
+                         deterministic=True
                          )
     trainer.fit(model, dataset)
 
     print(f'{config.BEST_MODEL_PATH} : {os.path.exists(config.BEST_MODEL_PATH)}')
-    trainer.test(ckpt_path=config.BEST_MODEL_PATH)
+    trainer.test()
 
 
 def tune_hyper_params():
