@@ -28,7 +28,7 @@ class DFDCModels(pl.LightningModule):
         if 'efficient' in self.model_name or self.model_name.startswith('densenet'):
             self.model = timm.create_model(self.model_name, pretrained=self.config.load_pretrained)
             n_features = self.model.classifier.in_features
-            self.model.classifier = nn.Linear(n_features, self.config.target_size)
+            self.model.classifier = nn.Sequential(nn.Dropout(0.3), nn.Linear(n_features, self.config.target_size))
         elif self.model_name == 'deit':
             self.model = torch.hub.load('facebookresearch/deit:main', 'deit_base_patch16_224',
                                         pretrained=self.config.load_pretrained)
