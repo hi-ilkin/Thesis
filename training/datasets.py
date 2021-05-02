@@ -7,6 +7,8 @@ import cv2
 import torch
 import numpy as np
 import pandas as pd
+from pytorch_lightning import seed_everything
+
 import wandb
 from torch.utils.data import Dataset, DataLoader
 import pytorch_lightning as pl
@@ -14,6 +16,8 @@ import config as path_config
 
 from local_properties import NUM_WORKERS
 from training.transformers import get_transformer
+
+seed_everything(99)
 
 
 class DFDCDatasetImages(Dataset):
