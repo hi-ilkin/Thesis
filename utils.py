@@ -7,6 +7,9 @@ import numpy as np
 from PIL import Image
 from functools import wraps
 
+from albumentations import Compose, LongestMaxSize, PadIfNeeded
+from albumentations.pytorch import ToTensorV2
+
 import config
 
 
@@ -120,6 +123,7 @@ def extract_box(image, coordinates, output_path=None):
         crop.save(output_path)
     return crop
 
+
 @timeit
 def run_in_parallel(func, args) -> list:
     """
@@ -136,3 +140,18 @@ def run_in_parallel(func, args) -> list:
             results.append(result)
 
         return [result.get() for result in results]
+
+
+def transform(size):
+    return Compose([
+        LongestMaxSize(size),
+        PadIfNeeded(min_height=size, min_width=size, border_mode=cv2.BORDER_CONSTANT),
+        ToTensorV2()
+    ])
+
+
+def get_unified_img(p, size=224):
+    transforms = transform(size)
+    img = cv2.imread(p)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    return transforms(image=img)['image']
