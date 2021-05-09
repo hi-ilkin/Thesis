@@ -155,3 +155,12 @@ def get_unified_img(p, size=224):
     img = cv2.imread(p)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     return transforms(image=img)['image']
+
+
+def compute_eer(fpr, tpr, thresholds):
+    """ Returns equal error rate (EER) and the corresponding threshold. """
+    fnr = 1 - tpr
+    abs_diffs = np.abs(fpr - fnr)
+    min_index = np.argmin(abs_diffs)
+    eer = np.mean((fpr[min_index], fnr[min_index]))
+    return eer, thresholds[min_index]

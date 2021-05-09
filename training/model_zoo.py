@@ -1,5 +1,6 @@
 import os
 
+import numpy as np
 import timm
 import torch
 import wandb
@@ -8,8 +9,9 @@ from torch import nn
 from torch.optim import Adam, SGD
 import pytorch_lightning as pl
 from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts, CyclicLR, StepLR, ReduceLROnPlateau
-from sklearn.metrics import f1_score, recall_score, precision_score
+from sklearn.metrics import f1_score, recall_score, precision_score, roc_curve, auc, log_loss
 import config as path_config
+from utils import compute_eer
 
 
 def get_criterion(weights):
@@ -86,7 +88,7 @@ class DFDCModels(pl.LightningModule):
                                )
         elif self.config.lr_scheduler == 'lronplateau':
             scheduler = ReduceLROnPlateau(optimizer,
-                                          factor = self.config.lr_factor,
+                                          factor=self.config.lr_factor,
                                           patience=self.config.lr_patience,
                                           min_lr=self.config.lr_min,
                                           threshold=self.config.lr_threshold
@@ -95,8 +97,7 @@ class DFDCModels(pl.LightningModule):
             print(f"Using {self.config.opt_name} with fixed LR={self.config.lr_max}")
             return {'optimizer': optimizer}
         else:
-            raise NameError(
-                'Wrong scheduler name. Currently supported: ["fixed", "cyclic", "cyclic2", "CosineAnnealingWarmRestarts"]')
+            raise NameError('Wrong scheduler name.')
 
         return {
             'optimizer': optimizer,
@@ -132,6 +133,22 @@ class DFDCModels(pl.LightningModule):
     def test_step(self, test_batch, batch_idx):
         return self.validation_step(test_batch, batch_idx, prefix='test')
 
+    def log_video_based_metrics(self, df):
+        df['video_name'] = df['paths'].apply(lambda row: os.path.basename(row).split('_')[0])
+        df = df.groupby('video_name').mean().reset_index()
+        fpr, tpr, thresholds = roc_curve(y_true=df['targets'], y_score=df['preds'])
+        roc_auc = auc(fpr, tpr)
+        eer, threshold = compute_eer(fpr, tpr, thresholds)
+        df['predicted'] = np.where(df['preds'] > threshold, 1, 0)
+
+        targets = df['targets'].to_list()
+        predicted = df['predicted'].to_list()
+        calculated_log_loss = log_loss(targets, predicted)
+        self.log_dict({'log_loss': calculated_log_loss, 'roc_auc': roc_auc, 'eer': eer, 'optimal_threshold': threshold})
+        wandb.log(
+            {'video_conf_mat': wandb.plot.confusion_matrix(y_true=targets, preds=predicted,
+                                                           class_names=['fake', 'real'])})
+
     def validation_epoch_end(self, outputs, prefix='val'):
         preds, targets, paths = [], [], []
         for output in outputs:
@@ -145,9 +162,11 @@ class DFDCModels(pl.LightningModule):
         if prefix == 'val':
             conf_mat_name = 'conf_mat'  # for backward compatibility
         elif prefix == 'test':
-            # TODO: Get name for running models
-            pd.DataFrame({'paths': paths, 'preds': preds, 'targets': targets}) \
-                .to_csv(f'{path_config.TEST_IMG_OUTPUT}/{self.config.model_name}_{self.config.run_id}_misclassified.csv', index=False)
+            test_outputs = pd.DataFrame({'paths': paths, 'preds': preds, 'targets': targets})
+            test_outputs.to_csv(f'{path_config.TEST_IMG_OUTPUT}/{self.config.model_name}_{self.config.run_id}.csv',
+                                index=False)
+            self.log_video_based_metrics(test_outputs)
+
             conf_mat_name = 'test_conf_mat'
             wandb.log({"Test results": wandb.Table(data=[list(metrics.values())], columns=list(metrics.keys()))})
         else:
