@@ -67,6 +67,13 @@ class DFDCModels(pl.LightningModule):
                                step_size=self.config.lr_step_size,
                                gamma=self.config.lr_gamma
                                )
+        elif self.config.lr_scheduler == 'lronplateau':
+            scheduler = ReduceLROnPlateau(optimizer,
+                                          factor = self.config.lr_factor,
+                                          patience=self.config.lr_patience,
+                                          min_lr=self.config.lr_min,
+                                          threshold=self.config.lr_threshold
+                                          )
         elif self.config.lr_scheduler == 'fixed':
             print(f"Using {self.config.opt_name} with fixed LR={self.config.lr_max}")
             return {'optimizer': optimizer}
@@ -76,7 +83,8 @@ class DFDCModels(pl.LightningModule):
 
         return {
             'optimizer': optimizer,
-            'lr_scheduler': scheduler
+            'lr_scheduler': scheduler,
+            'monitor': 'val_loss'
         }
 
     def training_step(self, train_batch, batch_idx):
