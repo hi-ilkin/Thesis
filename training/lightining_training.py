@@ -26,6 +26,7 @@ def train_fn():
     wandb_logger = WandbLogger(project=project, name=name)
     params = wandb_logger.experiment.config
     run_id = wandb_logger.experiment._run_id
+    wandb.save('transformers.py')
 
     params.update({'run_id':run_id})
     model = DFDCModels(params)
@@ -60,36 +61,10 @@ def train_fn():
     trainer.test()
 
 
-def tune_hyper_params():
-    sweep_config = {
-
-        "method": "random",  # Random search
-        "metric": {
-            "name": "val_loss",
-            "goal": "minimize"
-        },
-        "parameters": {
-            "batch_size": {
-                "values": [64, 128]
-            },
-            "precision": {
-                "values": [16, 32]
-            },
-            # "lr": {
-            #     "values":[0.001, 0.005, 0.0001, 0.0005]
-            # }
-        }
-    }
-
-    sweep_id = wandb.sweep(sweep_config, project='sweep-test')
-    wandb.agent(sweep_id, function=train_fn)
-
-
 if __name__ == '__main__':
     seed_everything(99)
     delay = input("Delay: ")
     time.sleep(eval(delay))
 
     wandb.login(key=local_properties.WANDB_KEY)
-    # tune_hyper_params()
     train_fn()
