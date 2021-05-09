@@ -7,7 +7,7 @@ import pandas as pd
 from torch import nn
 from torch.optim import Adam, SGD
 import pytorch_lightning as pl
-from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts, CyclicLR, StepLR
+from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts, CyclicLR, StepLR, ReduceLROnPlateau
 from sklearn.metrics import f1_score, recall_score, precision_score
 import config as path_config
 
@@ -29,12 +29,29 @@ class DFDCModels(pl.LightningModule):
             self.model = timm.create_model(self.model_name, pretrained=self.config.load_pretrained)
             n_features = self.model.classifier.in_features
             self.model.classifier = nn.Sequential(nn.Dropout(0.3), nn.Linear(n_features, self.config.target_size))
+
         elif self.model_name == 'deit':
             self.model = torch.hub.load('facebookresearch/deit:main', 'deit_base_patch16_224',
                                         pretrained=self.config.load_pretrained)
 
             n_features = self.model.head.in_features
             self.model.head = nn.Sequential(nn.Dropout(0.3), nn.Linear(n_features, self.config.target_size))
+
+        elif self.model_name == 'xception':
+            self.model = timm.create_model(self.model_name, pretrained=self.config.load_pretrained)
+            n_features = self.model.fc.in_features
+            self.model.fc = nn.Sequential(nn.Dropout(0.3), nn.Linear(n_features, self.config.target_size))
+
+        elif self.model_name == 'inception_resnet_v2':
+            self.model = timm.create_model(self.model_name, pretrained=self.config.load_pretrained)
+            n_features = self.model.classif.in_features
+            self.model.classif = nn.Sequential(nn.Dropout(0.3), nn.Linear(n_features, self.config.target_size))
+
+        elif self.model_name == 'inception_v4':
+            self.model = timm.create_model(self.model_name, pretrained=self.config.load_pretrained)
+            n_features = self.model.last_linear.in_features
+            self.model.last_linear = nn.Sequential(nn.Dropout(0.3), nn.Linear(n_features, self.config.target_size))
+
         else:
             RuntimeError(f"Unknown model: {self.model_name}")
 
