@@ -8,3 +8,4 @@
 /training/lightning_logs/
 /local_properties.py
 *tmp*
+/wandb/
