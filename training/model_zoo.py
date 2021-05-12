@@ -144,8 +144,8 @@ class DFDCModels(pl.LightningModule):
         df['predicted'] = np.where(df['confidence_1'] > threshold, 1, 0)
 
         targets = df['targets'].to_list()
-        predicted = df['predicted'].to_list()
-        calculated_log_loss = log_loss(targets, predicted)
+        predicted = df['confidence_1'].to_list()
+        calculated_log_loss = round(log_loss(targets, predicted), 4)
         self.log_dict({'v_log_loss': calculated_log_loss, 'v_roc_auc': roc_auc, 'v_eer': eer, 'v_optimal_threshold': threshold})
         wandb.log(
             {'video_conf_mat': wandb.plot.confusion_matrix(y_true=targets, preds=predicted,
@@ -180,7 +180,7 @@ class DFDCModels(pl.LightningModule):
             conf_mat_name = 'conf_other_mat'
 
         wandb.log(
-            {conf_mat_name: wandb.plot.confusion_matrix(y_true=targets, preds=preds, class_names=['fake', 'real'])})
+            {conf_mat_name: wandb.plot.confusion_matrix(y_true=targets, preds=preds, class_names=['real', 'fake'])})
 
     def test_epoch_end(self, outputs):
         self.validation_epoch_end(outputs, prefix='test')
