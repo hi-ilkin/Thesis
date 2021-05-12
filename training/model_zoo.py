@@ -120,7 +120,8 @@ class DFDCModels(pl.LightningModule):
         im_paths = val_batch['path']
 
         y_preds = self.model(images)
-        logits = torch.argmax(torch.sigmoid(y_preds.squeeze()), dim=1)
+        confidence = torch.softmax(y_preds.squeeze(), dim=1)
+        logits = torch.argmax(confidence, dim=1)
 
         loss = self.criterion(y_preds, labels)
         self.log(f'{prefix}_loss', loss, prog_bar=True)
@@ -128,6 +129,7 @@ class DFDCModels(pl.LightningModule):
             f'{prefix}_loss': loss,
             'preds': logits.cpu().numpy(),
             'target': labels.cpu().numpy(),
+            'confidence': confidence.cpu().numpy(),
             'paths': im_paths}
 
     def test_step(self, test_batch, batch_idx):
@@ -139,22 +141,23 @@ class DFDCModels(pl.LightningModule):
         fpr, tpr, thresholds = roc_curve(y_true=df['targets'], y_score=df['preds'])
         roc_auc = auc(fpr, tpr)
         eer, threshold = compute_eer(fpr, tpr, thresholds)
-        df['predicted'] = np.where(df['preds'] > threshold, 1, 0)
+        df['predicted'] = np.where(df['confidence_1'] > threshold, 1, 0)
 
         targets = df['targets'].to_list()
         predicted = df['predicted'].to_list()
         calculated_log_loss = log_loss(targets, predicted)
-        self.log_dict({'log_loss': calculated_log_loss, 'roc_auc': roc_auc, 'eer': eer, 'optimal_threshold': threshold})
+        self.log_dict({'v_log_loss': calculated_log_loss, 'v_roc_auc': roc_auc, 'v_eer': eer, 'v_optimal_threshold': threshold})
         wandb.log(
             {'video_conf_mat': wandb.plot.confusion_matrix(y_true=targets, preds=predicted,
-                                                           class_names=['fake', 'real'])})
+                                                           class_names=['real', 'fake'])})
 
     def validation_epoch_end(self, outputs, prefix='val'):
-        preds, targets, paths = [], [], []
+        preds, targets, confidences, paths = [], [], [], []
         for output in outputs:
             preds.extend(output['preds'])
             targets.extend(output['target'])
             paths.extend(output['paths'])
+            confidences.extend(output['confidence'])
 
         metrics = self.get_metrics_with_sklearn(preds, targets, prefix=prefix)
         self.log_dict(metrics)
@@ -162,8 +165,12 @@ class DFDCModels(pl.LightningModule):
         if prefix == 'val':
             conf_mat_name = 'conf_mat'  # for backward compatibility
         elif prefix == 'test':
-            test_outputs = pd.DataFrame({'paths': paths, 'preds': preds, 'targets': targets})
-            test_outputs.to_csv(f'{path_config.TEST_IMG_OUTPUT}/{self.config.model_name}_{self.config.run_id}.csv',
+            conf_0 = [x for x, _ in confidences]
+            conf_1 = [x for _, x in confidences]
+
+            test_outputs = pd.DataFrame({'paths': paths, 'preds': preds, 'targets': targets,
+                                         'confidence_0': conf_0, 'confidence_1': conf_1})
+            test_outputs.to_csv(f'{path_config.TEST_IMG_OUTPUT}/{self.config.project}_{self.config.run_name}.csv',
                                 index=False)
             self.log_video_based_metrics(test_outputs)
 

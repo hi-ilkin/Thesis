@@ -34,7 +34,7 @@ class DFDCDatasetImages(Dataset):
 
         self.names = self.df['names'].values
         self.label_names = self.df['labels'].values
-        self.labels = np.where(self.label_names == 'REAL', 1, 0)
+        self.labels = np.where(self.label_names == 'REAL', 0, 1)
         self.transform = get_transformer(mode)
 
     def __len__(self):

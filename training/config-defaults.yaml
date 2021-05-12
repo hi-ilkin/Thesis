@@ -34,22 +34,22 @@ use_chunks:
 
 # training configuration
 project:
-  value: DFDC-phase-5
+  value: DFDC-phase-7
 model_name:
   desc: timm model name
-  value: tf_efficientnet_b1_ns
+  value: xception
 run_name:
   desc: name displayed at wandb
-  value: eb4-setup-13
+  value: s1_xception-small
 notes:
   desc: Add run specific notes here. Don't forget to delete when starting new run
-  value: Setup 3 + eb1
+  value: phase 7
 resume_from:
   desc: checkpoint to continue from. None if you want start from scracth
   value: None
 epochs:
   desc: Number of epochs to train. Should be chunk size * epoch if chunks used
-  value: 10
+  value: 2
 target_size:
   desc: Output size
   value: 2
@@ -82,13 +82,13 @@ opt_name:
 # lr scheduler setup
 lr_scheduler:
   desc: Name of the learning rate scheduler - [fixed, lronplateau, step, cyclic, cyclic2, CosineAnnealingWarmRestarts]
-  value: lronplateau
+  value: fixed
 lr_min:
   desc: minnimum lr rate
   value: 0.00001
 lr_max:
   desc: maximum lr rate
-  value: 0.001
+  value: 0.0001
 lr_gamma:
   desc: multipler for learning rate scheduler
   value: 0.5
