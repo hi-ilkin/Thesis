@@ -136,7 +136,10 @@ def run_in_parallel(func, args) -> list:
     results = []
     with Pool(processes=11) as pool:
         for item in args:
-            result = pool.apply_async(func, item)
+            if type(item) == list:
+                result = pool.apply_async(func, item)
+            else:
+                result = pool.apply_async(func, (item,))
             results.append(result)
 
         return [result.get() for result in results]
@@ -163,4 +166,4 @@ def compute_eer(fpr, tpr, thresholds):
     abs_diffs = np.abs(fpr - fnr)
     min_index = np.argmin(abs_diffs)
     eer = np.mean((fpr[min_index], fnr[min_index]))
-    return eer, thresholds[min_index]
+    return round(eer, 4), round(thresholds[min_index], 4)
