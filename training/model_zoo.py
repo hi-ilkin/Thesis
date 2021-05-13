@@ -144,11 +144,11 @@ class DFDCModels(pl.LightningModule):
         df['predicted'] = np.where(df['confidence_1'] > threshold, 1, 0)
 
         targets = df['targets'].to_list()
-        predicted = df['confidence_1'].to_list()
-        calculated_log_loss = round(log_loss(targets, predicted), 4)
-        self.log_dict({'v_log_loss': calculated_log_loss, 'v_roc_auc': roc_auc, 'v_eer': eer, 'v_optimal_threshold': threshold})
+        calculated_log_loss = round(log_loss(targets, df['confidence_1'].to_list()), 4)
+        self.log_dict(
+            {'v_log_loss': calculated_log_loss, 'v_roc_auc': roc_auc, 'v_eer': eer, 'v_optimal_threshold': threshold})
         wandb.log(
-            {'video_conf_mat': wandb.plot.confusion_matrix(y_true=targets, preds=predicted,
+            {'video_conf_mat': wandb.plot.confusion_matrix(y_true=targets, preds=df['predicted'],
                                                            class_names=['real', 'fake'])})
 
     def validation_epoch_end(self, outputs, prefix='val'):
@@ -170,8 +170,9 @@ class DFDCModels(pl.LightningModule):
 
             test_outputs = pd.DataFrame({'paths': paths, 'preds': preds, 'targets': targets,
                                          'confidence_0': conf_0, 'confidence_1': conf_1})
-            test_outputs.to_csv(f'{path_config.TEST_IMG_OUTPUT}/{self.config.project}_{self.config.run_name}.csv',
-                                index=False)
+            test_outputs.to_csv(
+                f'{path_config.TEST_IMG_OUTPUT}/{self.config.project}_{self.config.run_name}_{self.config.run_id}.csv',
+                index=False)
             self.log_video_based_metrics(test_outputs)
 
             conf_mat_name = 'test_conf_mat'
