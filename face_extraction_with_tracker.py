@@ -8,7 +8,7 @@ import numpy as np
 import iou
 import config
 
-from utils import timeit, run_in_parallel, extract_box
+from utils import timeit, extract_box
 from utils import get_frames
 from facenet_pytorch.models.mtcnn import MTCNN
 
@@ -83,7 +83,7 @@ def detect_and_track(frames):
 
 
 @timeit
-def extract_faces(tracking_data, video_path=None, frames=None, threshold=50, sample_count=50):
+def extract_faces(tracking_data, video_name, frames=None, threshold=50, sample_count=50):
     """
     By using coordinates at given dictionary or pickle file ,
     extracts *sample_count* amount faces from faces consecutively
@@ -91,8 +91,8 @@ def extract_faces(tracking_data, video_path=None, frames=None, threshold=50, sam
 
     :param tracking_data - if string, path to pickle file contains tracking data,
     if dict tracking data
-    :param video_path - path to video
-    :param frames - frames of the video, either path or video should be provided
+    :param video_name - name of the video file
+    :param frames - frames of the video, if not provided, frames will be extracted by using video_name
     :param threshold - minimum number of consecutive frames for a face to be tracked, default 50
     :param  sample_count - number of sampled faces from given video, default 50
     """
@@ -102,7 +102,7 @@ def extract_faces(tracking_data, video_path=None, frames=None, threshold=50, sam
             tracking_data = pickle.load(fp)
 
     if len(tracking_data) == 0:
-        print(f'No face detected at video {video_path}')
+        print(f'No face detected at video {video_name}')
 
     freq_coordinates = []
     freq_counts = []
@@ -114,12 +114,10 @@ def extract_faces(tracking_data, video_path=None, frames=None, threshold=50, sam
             freq_coordinates.append(coordinates)
 
     if len(freq_coordinates) == 0:
-        print(f'No face tracked enough at video {video_path}')
+        print(f'No face tracked enough at video {video_name}')
 
-    if video_path is not None:
-        frames = get_frames(video_path, start=0, step=1, output_type='PIL')
-    elif video_path is None and frames is None:
-        raise AttributeError('Either provide path to video or frames of video should be provided')
+    if frames is None:
+        frames = get_frames(os.path.join(root_video_path, video_name), start=0, step=1, output_type='PIL')
 
     step = round(sum(freq_counts) / sample_count)
     counter = 0
@@ -127,14 +125,14 @@ def extract_faces(tracking_data, video_path=None, frames=None, threshold=50, sam
     for coords in freq_coordinates:
         for i in range(0, len(coords), step):
             coord, frame_id = coords[i]
-            extract_box(frames[frame_id], coord, f'{config.VAL_IMAGES}/{video_path}_{counter}.png')
+            extract_box(frames[frame_id], coord, f'{config.VAL_IMAGES}/{video_name}_{counter}.png')
             counter += 1
-    print(f'{counter} faces were extracted from video {video_path} from {len(freq_counts)} tracked faces.')
+    print(f'{counter} faces were extracted from video {video_name} from {len(freq_counts)} tracked faces.')
 
 
 @timeit
 def main():
-    video_paths = glob.glob(f'{config.root}/videos_test/*.mp4')
+    video_paths = glob.glob(f'{root_video_path}/*.mp4')
     os.makedirs(output_path, exist_ok=True)
 
     def _loop():
@@ -144,7 +142,7 @@ def main():
 
         with open(f'{output_path}/{video_name}.pkl', 'wb') as fp:
             pickle.dump(tracked_faces, fp)
-        extract_faces(tracked_faces, frames=frames)
+        extract_faces(tracked_faces, video_name=video_name, frames=frames)
 
     for i, vp in enumerate(video_paths[:2]):
         print(f'{i}/{len(video_paths)} {vp}')
