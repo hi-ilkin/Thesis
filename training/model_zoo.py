@@ -136,15 +136,19 @@ class DFDCModels(pl.LightningModule):
         return self.validation_step(test_batch, batch_idx, prefix='test')
 
     def log_video_based_metrics(self, df):
+        # using simple averaging per video
         df['video_name'] = df['paths'].apply(lambda row: os.path.basename(row).split('_')[0])
         df = df.groupby('video_name').mean().reset_index()
+        targets = df['targets'].to_list()
+
         fpr, tpr, thresholds = roc_curve(y_true=df['targets'], y_score=df['preds'])
         roc_auc = auc(fpr, tpr)
         eer, threshold = compute_eer(fpr, tpr, thresholds)
-        df['predicted'] = np.where(df['confidence_1'] > threshold, 1, 0)
 
-        targets = df['targets'].to_list()
+        # binary output, used for confusion matrix
+        df['predicted'] = np.where(df['confidence_1'] > threshold, 1, 0)
         calculated_log_loss = round(log_loss(targets, df['confidence_1'].to_list()), 4)
+
         self.log_dict(
             {'v_log_loss': calculated_log_loss, 'v_roc_auc': roc_auc, 'v_eer': eer, 'v_optimal_threshold': threshold})
         wandb.log(

@@ -65,7 +65,7 @@ class DFDCDatasetNPZ(Dataset):
         self.npz = np.load(npz_path, allow_pickle=True)
         self.data = self.npz['data']
         self.label_names = self.npz['labels']
-        self.labels = np.where(self.label_names == 'REAL', 1, 0)
+        self.labels = np.where(self.label_names == 'REAL', 0, 1)
         self.transform_mode = mode
         if mode is not None:
             self.transformer = get_transformer(mode=mode)
