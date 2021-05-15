@@ -144,7 +144,7 @@ def main():
             pickle.dump(tracked_faces, fp)
         extract_faces(tracked_faces, video_name=video_name, frames=frames)
 
-    for i, vp in enumerate(video_paths[:2]):
+    for i, vp in enumerate(video_paths):
         print(f'{i}/{len(video_paths)} {vp}')
         try:
             _loop()
