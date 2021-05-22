@@ -26,7 +26,8 @@ def train_fn():
     wandb_logger = WandbLogger(project=project, name=name)
     params = wandb_logger.experiment.config
     run_id = wandb_logger.experiment._run_id
-    wandb.save('transformers.py')
+    wandb.save('transformers.py', policy='now')
+    wandb.save('config.py', base_path='../', policy='now')
 
     params.update({'run_id':run_id})
     model = DFDCModels(params)
