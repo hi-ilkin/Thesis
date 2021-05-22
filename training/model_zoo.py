@@ -54,6 +54,11 @@ class DFDCModels(pl.LightningModule):
             n_features = self.model.last_linear.in_features
             self.model.last_linear = nn.Sequential(nn.Dropout(0.3), nn.Linear(n_features, self.config.target_size))
 
+        elif self.model_name == 'cspresnext50':
+            self.model = timm.create_model(self.model_name, pretrained=self.config.load_pretrained)
+            n_features = self.model.head.fc.in_features
+            self.model.head.fc = nn.Sequential(nn.Dropout(0.3), nn.Linear(n_features, self.config.target_size))
+
         else:
             RuntimeError(f"Unknown model: {self.model_name}")
 
