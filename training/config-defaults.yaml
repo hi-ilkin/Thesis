@@ -1,23 +1,3 @@
-# Face detector specific config
-detector:
-  desc: face detector module
-  value: MTCNN
-sampling_rate:
-  desc: detect face at every k frame
-  value: 30
-margin:
-  desc: margin around detected face in pixels
-  value: 30
-thresholds_mtcnn:
-  desc: threshold value for MTCNN detector
-  value: None
-min_face_size:
-  desc: minimum accepted detected face size
-  value: 60
-image_size:
-  desc: size of detection output (square)
-  value: 224
-
 # dataset specific config
 batch_size:
   desc: Size of each mini-batch. EB0 - 256 too big for Titan, EB7 - 32 is enough
@@ -87,10 +67,10 @@ lr_min:
   desc: minnimum lr rate
   value: 0.00001
 lr_max:
-  desc: maximum lr rate
+  desc: maximum lr rate. Used by fixed and starting point for step LR
   value: 0.0001
 lr_gamma:
-  desc: multipler for learning rate scheduler
+  desc: multipler for learning rate scheduler. Also used by step LR
   value: 0.5
 
 ## Cyclic specific params
@@ -98,7 +78,7 @@ lr_mode:
   desc: Mode for cyclic LR
   value: triangular2
 lr_step_size:
-  desc: Number of training epochs in the increasing half of a cycle
+  desc: Number of training epochs in the increasing half of a cycle. Step LR also uses this
   value: 2
 
 ## CosineAnnealingWarmRestarts specific params
