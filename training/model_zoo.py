@@ -3,6 +3,8 @@ import os
 import numpy as np
 import timm
 import torch
+from torchvision import models
+
 import wandb
 import pandas as pd
 from torch import nn
@@ -27,7 +29,8 @@ class DFDCModels(pl.LightningModule):
         self.config = config
         self.model_name = self.config.model_name
 
-        if 'efficient' in self.model_name or self.model_name.startswith('densenet'):
+        if 'efficient' in self.model_name or self.model_name.startswith('densenet') \
+                or self.model_name.startswith('mobilenet'):
             self.model = timm.create_model(self.model_name, pretrained=self.config.load_pretrained)
             n_features = self.model.classifier.in_features
             self.model.classifier = nn.Sequential(nn.Dropout(0.3), nn.Linear(n_features, self.config.target_size))
@@ -39,7 +42,7 @@ class DFDCModels(pl.LightningModule):
             n_features = self.model.head.in_features
             self.model.head = nn.Sequential(nn.Dropout(0.3), nn.Linear(n_features, self.config.target_size))
 
-        elif self.model_name == 'xception':
+        elif self.model_name in ['xception', 'resnet50']:
             self.model = timm.create_model(self.model_name, pretrained=self.config.load_pretrained)
             n_features = self.model.fc.in_features
             self.model.fc = nn.Sequential(nn.Dropout(0.3), nn.Linear(n_features, self.config.target_size))
@@ -58,6 +61,11 @@ class DFDCModels(pl.LightningModule):
             self.model = timm.create_model(self.model_name, pretrained=self.config.load_pretrained)
             n_features = self.model.head.fc.in_features
             self.model.head.fc = nn.Sequential(nn.Dropout(0.3), nn.Linear(n_features, self.config.target_size))
+
+        elif self.model_name.startswith('densenet161'):
+            self.model = models.densenet161(pretrained=self.config.load_pretrained)
+            n_features = self.model.classifier.in_features
+            self.model.classifier = nn.Sequential(nn.Dropout(0.3), nn.Linear(n_features, self.config.target_size))
 
         else:
             RuntimeError(f"Unknown model: {self.model_name}")
