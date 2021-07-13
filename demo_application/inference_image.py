@@ -8,11 +8,18 @@ from demo_application.demo_models import DFDCSmallModels
 from training.transformers import get_transformer
 from utils import extract_box
 
+np.random.seed(1)
+torch.manual_seed(1)
+
+if torch.cuda.is_available():
+    torch.cuda.manual_seed_all(1)
+
 mtcnn = MTCNN(**config.FACE_DETECTOR_KWARGS)
 transform = get_transformer('test', size=224)
 
 model = DFDCSmallModels.load_from_checkpoint(
-    'model=tf_efficientnet_b0_ns-run_id=2yvkagkm-epoch=00-val_loss=1.2081.ckpt')
+    'models/model=tf_efficientnet_b0_ns-run_id=c3x0rzgt-epoch=03-val_loss=0.3987.ckpt')
+model.eval()
 
 
 def process_image(image, model_name):
