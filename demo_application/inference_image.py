@@ -30,15 +30,15 @@ def process_image(image, model_name):
     print(f'{len(boxes)} face(s) were detected with {confidence_face} probability.')
 
     face_img = extract_box(image, boxes[0])
-    input_image = transform(image=np.array(face_img))
+    normalized_image = transform(image=np.array(face_img))
     print(f'Face extraction is done!')
 
-    y_preds = model.forward(input_image['image'].unsqueeze(0))
+    y_preds = model.forward(normalized_image['image'].unsqueeze(0))
     confidence = torch.softmax(y_preds, dim=1)
-    fake_confidence, real_confidence = np.round(confidence.cpu().detach().numpy().squeeze().astype('float'), 2)
-    print('Inference completed!')
+    real_confidence, fake_confidence = np.round(confidence.cpu().detach().numpy().squeeze().astype('float'), 2)
+    print(f'Inference completed! {y_preds}\n')
 
-    return face_img, '0.44', {'real': real_confidence, 'fake': fake_confidence}, f'Chosen model: {model_name}'
+    return face_img, confidence_face*100, {'real': real_confidence, 'fake': fake_confidence}
 
 
 if __name__ == '__main__':
@@ -51,8 +51,7 @@ if __name__ == '__main__':
                          outputs=[
                              gr.outputs.Image(label='Detected Face'),
                              gr.outputs.Label(label='Face detection confidence'),
-                             gr.outputs.Label(num_top_classes=2, label='Fake/Real confidences'),
-                             'text'
+                             gr.outputs.Label(num_top_classes=2, label='Fake/Real confidences')
                          ],
                          examples=[
                              ['examples/fake.jpg', 'Xception'],
