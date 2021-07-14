@@ -96,12 +96,11 @@ def process_image(image, *args):
 
 
 if __name__ == '__main__':
+    model_names = model_metadatas.keys()
     iface = gr.Interface(mocked_process_iamge,
                          inputs=[
                              gr.inputs.Image(type='pil', label='Input Image'),
-                             gr.inputs.Slider(label='Slider 1'),
-                             gr.inputs.Slider(label='Slider 2'),
-                             gr.inputs.Slider(label='Slider 3'),
+                             *[gr.inputs.Slider(minimum=0, maximum=1, step=0.05, default=1, label=m) for m in model_names]
                          ],
                          outputs=[
                              gr.outputs.Image(label='Detected Face'),
@@ -109,13 +108,6 @@ if __name__ == '__main__':
                              gr.outputs.Label(num_top_classes=2, label='EFB0'),
                              gr.outputs.Label(num_top_classes=2, label='EFB4')
                          ],
-                         examples=[
-                             ['examples/fake.jpg', 'Xception'],
-                             ['examples/fake.jpg', 'EfficientNet-B0'],
-                             ['examples/fake.jpg', 'EfficientNet-B4'],
-                             ['examples/aaeflzzhvy.mp4_9_.png', 'Xception'],
-                             ['examples/aaghqpewzx.mp4_8.png', 'DenseNet161'],
-                             ['examples/abfnyenqdw.mp4_1.png', 'Inception-ResNet-v2']
-                         ],
+                         # examples='examples', - looks upgly, better upload
                          title='DeepFake Face Detection Demo')
     iface.launch(debug=True)
