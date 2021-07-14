@@ -67,7 +67,7 @@ def get_face(in_image):
 
 
 @timeit
-def process_image(image, model_name, *args):
+def process_image(image, *args):
     print(f"Starting processing. {model_name} model was chosen.")
     face_img, normalized_image, confidence_face = get_face(image)
 
@@ -86,8 +86,6 @@ if __name__ == '__main__':
     iface = gr.Interface(process_image,
                          inputs=[
                              gr.inputs.Image(type='pil', label='Input Image'),
-                             gr.inputs.Dropdown(
-                                 choices=['Xception', 'EfficientNet-B0', 'EfficientNet-B4'], type='value'),
                              gr.inputs.Slider(label='Slider 1'),
                              gr.inputs.Slider(label='Slider 2'),
                              gr.inputs.Slider(label='Slider 3'),
