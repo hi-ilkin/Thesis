@@ -21,12 +21,17 @@ if torch.cuda.is_available():
 use_real = True  # set false to use mocked data
 if not use_real:
     print("[WARNING] Using mocked data! Set `use_real` to True to use real outputs.")
+else:
+    np.random.seed(1)
+    torch.manual_seed(1)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(1)
+
+    transform = get_transformer('test', size=240)
 
 if use_real:
     mtcnn = MTCNN(**config.FACE_DETECTOR_KWARGS)
 print('Face detector initialized!')
-
-transform = get_transformer('test', size=224)
 
 models_root = 'models'
 model_metadatas = {
@@ -48,11 +53,11 @@ models = {}
 print('Initializing models', end='...')
 if use_real:
     for name, (path, run_name) in model_metadatas.items():
-        model = DFDCSmallModels(run_name)
+        _model = DFDCSmallModels(run_name)
         checkpoint = torch.load(path)
-        model.load_state_dict(checkpoint['state_dict'])
-        model.eval()
-        models[name] = model
+        _model.load_state_dict(checkpoint['state_dict'])
+        _model.eval()
+        models[name] = _model
 print('DONE!')
 
 
@@ -80,7 +85,7 @@ def mocked_process_image(image, *weights):
     results = []
 
     for _ in range(8):
-        fake = 0.6
+        fake = random.randint(0, 101) / 100
         results.append({'fake': fake, 'real': 1 - fake})
 
     print(results)
