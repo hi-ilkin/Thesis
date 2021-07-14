@@ -5,7 +5,6 @@ import gradio as gr
 import pandas as pd
 import torch
 import codecs
-
 import config
 from facenet_pytorch.models.mtcnn import MTCNN
 from demo_application.demo_models import DFDCSmallModels
@@ -19,7 +18,12 @@ torch.manual_seed(1)
 if torch.cuda.is_available():
     torch.cuda.manual_seed_all(1)
 
-# mtcnn = MTCNN(**config.FACE_DETECTOR_KWARGS)
+use_real = True  # set false to use mocked data
+if not use_real:
+    print("[WARNING] Using mocked data! Set `use_real` to True to use real outputs.")
+
+if use_real:
+    mtcnn = MTCNN(**config.FACE_DETECTOR_KWARGS)
 print('Face detector initialized!')
 
 transform = get_transformer('test', size=224)
@@ -42,12 +46,13 @@ model_metadatas = {
 
 models = {}
 print('Initializing models', end='...')
-# for name, (path, run_name) in model_metadatas.items():
-#     model = DFDCSmallModels(run_name)
-#     checkpoint = torch.load(path)
-#     model.load_state_dict(checkpoint['state_dict'])
-#     model.eval()
-#     models[name] = model
+if use_real:
+    for name, (path, run_name) in model_metadatas.items():
+        model = DFDCSmallModels(run_name)
+        checkpoint = torch.load(path)
+        model.load_state_dict(checkpoint['state_dict'])
+        model.eval()
+        models[name] = model
 print('DONE!')
 
 
@@ -69,7 +74,7 @@ def get_face(in_image):
     return face_img, normalized_image['image'].unsqueeze(0), confidence_face
 
 
-def mocked_process_iamge(image, *weights):
+def mocked_process_image(image, *weights):
     face_img = image
     confidence_face = random.randint(0, 101)
     results = []
@@ -112,7 +117,9 @@ def process_image(image, *weights):
 
 if __name__ == '__main__':
     model_names = model_metadatas.keys()
-    iface = gr.Interface(mocked_process_iamge,
+    fn = process_image if use_real else mocked_process_image
+
+    iface = gr.Interface(fn,
                          inputs=[
                              gr.inputs.Image(type='pil', label='Input Image'),
                              *[gr.inputs.Slider(minimum=0, maximum=1, step=0.05, default=1, label=m) for m in
