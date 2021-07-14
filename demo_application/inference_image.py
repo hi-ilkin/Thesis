@@ -2,6 +2,7 @@ import random
 
 import numpy as np
 import gradio as gr
+import pandas as pd
 import torch
 import codecs
 
@@ -68,19 +69,27 @@ def get_face(in_image):
     return face_img, normalized_image['image'].unsqueeze(0), confidence_face
 
 
-def mocked_process_iamge(image, *args):
+def mocked_process_iamge(image, *weights):
     face_img = image
     confidence_face = random.randint(0, 101)
     results = []
 
     for _ in range(8):
-        fake = random.randint(0, 101)/100
+        fake = 0.6
         results.append({'fake': fake, 'real': 1 - fake})
-    return face_img, confidence_face, *results[:2]
+
+    print(results)
+    df = pd.DataFrame(results)
+    df.insert(0, column='models', value=model_metadatas.keys())
+
+    f, r = np.mean(df[['fake', 'real']].mul(weights, axis=0))
+    weighted_overall_results = {'fake': f, 'real': r}
+
+    return face_img, confidence_face, df, weighted_overall_results
 
 
 @timeit
-def process_image(image, *args):
+def process_image(image, *weights):
     print(f"Starting processing.")
     face_img, normalized_image, confidence_face = get_face(image)
 
@@ -92,7 +101,13 @@ def process_image(image, *args):
         results.append({'real': real_confidence, 'fake': fake_confidence})
     print(f'Inference completed!')
 
-    return face_img, confidence_face, *results[:2]  # codecs.open('custom.html', 'r').read() - this is how you read html
+    df = pd.DataFrame(results)
+    df.insert(0, column='models', value=model_metadatas.keys())
+
+    f, r = np.mean(df[['fake', 'real']].mul(weights, axis=0))
+    weighted_overall_results = {'fake': f, 'real': r}
+
+    return face_img, confidence_face, df, weighted_overall_results  # codecs.open('custom.html', 'r').read() - this is how you read html
 
 
 if __name__ == '__main__':
@@ -100,13 +115,15 @@ if __name__ == '__main__':
     iface = gr.Interface(mocked_process_iamge,
                          inputs=[
                              gr.inputs.Image(type='pil', label='Input Image'),
-                             *[gr.inputs.Slider(minimum=0, maximum=1, step=0.05, default=1, label=m) for m in model_names]
+                             *[gr.inputs.Slider(minimum=0, maximum=1, step=0.05, default=1, label=m) for m in
+                               model_names]
                          ],
                          outputs=[
                              gr.outputs.Image(label='Detected Face'),
                              gr.outputs.Label(label='Face detection confidence'),
-                             gr.outputs.Label(num_top_classes=2, label='EFB0'),
-                             gr.outputs.Label(num_top_classes=2, label='EFB4')
+                             # 'dataframe',
+                             gr.outputs.Dataframe(label='Results', type='pandas', headers=['models,fake,real']),
+                             gr.outputs.Label(num_top_classes=2, label='Weighted Results')
                          ],
                          # examples='examples', - looks upgly, better upload
                          title='DeepFake Face Detection Demo')
