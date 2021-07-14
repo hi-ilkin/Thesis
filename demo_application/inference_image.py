@@ -1,12 +1,13 @@
 import numpy as np
 import gradio as gr
 import torch
-from facenet_pytorch.models.mtcnn import MTCNN
 
 import config
+from facenet_pytorch.models.mtcnn import MTCNN
 from demo_application.demo_models import DFDCSmallModels
 from training.transformers import get_transformer
-from utils import extract_box
+
+from utils import extract_box, timeit
 
 np.random.seed(1)
 torch.manual_seed(1)
@@ -17,28 +18,49 @@ if torch.cuda.is_available():
 mtcnn = MTCNN(**config.FACE_DETECTOR_KWARGS)
 transform = get_transformer('test', size=224)
 
-model = DFDCSmallModels.load_from_checkpoint(
-    'models/model=tf_efficientnet_b0_ns-run_id=c3x0rzgt-epoch=03-val_loss=0.3987.ckpt')
-model.eval()
+# model1 = DFDCSmallModels('tf_efficientnet_b0_ns').load_from_checkpoint(
+#     'models/model=tf_efficientnet_b0_ns-run_id=c3x0rzgt-epoch=03-val_loss=0.3987.ckpt')
+# model1.eval()
+
+model1 = DFDCSmallModels('tf_efficientnet_b0_ns')
+checkpoint = torch.load('models/model=tf_efficientnet_b0_ns-run_id=c3x0rzgt-epoch=03-val_loss=0.3987.ckpt')
+print(checkpoint.keys())
+model1.load_state_dict(checkpoint['state_dict'])
+model1.eval()
+
+model2 = DFDCSmallModels('tf_efficientnet_b4_ns')
+checkpoint = torch.load('models/model=tf_efficientnet_b4_ns-run_id=2u1txf0a-epoch=02-val_loss=0.3715.ckpt')
+model2.load_state_dict(checkpoint['state_dict'])
+model2.eval()
+
+# model2 = DFDCSmallModels('tf_efficientnet_b4_ns').load_from_checkpoint(
+#     'models/model=tf_efficientnet_b4_ns-run_id=2u1txf0a-epoch=02-val_loss=0.3715.ckpt'
+# )
+# model2.eval()
 
 
+@timeit
 def process_image(image, model_name):
     print(f"Starting processing. {model_name} model was chosen.")
 
     boxes, probabilities = mtcnn.detect(image)
-    confidence_face = probabilities.astype('float')[0]
+    confidence_face = round(probabilities.astype('float')[0] *100, 2)
     print(f'{len(boxes)} face(s) were detected with {confidence_face} probability.')
 
     face_img = extract_box(image, boxes[0])
     normalized_image = transform(image=np.array(face_img))
     print(f'Face extraction is done!')
 
-    y_preds = model.forward(normalized_image['image'].unsqueeze(0))
-    confidence = torch.softmax(y_preds, dim=1)
-    real_confidence, fake_confidence = np.round(confidence.cpu().detach().numpy().squeeze().astype('float'), 2)
-    print(f'Inference completed! {y_preds}\n')
+    results = []
+    for model in [model1, model2]:
+        y_preds = model.forward(normalized_image['image'].unsqueeze(0))
+        confidence = torch.softmax(y_preds, dim=1)
+        real_confidence, fake_confidence = np.round(confidence.cpu().detach().numpy().squeeze().astype('float'), 2)
+        results.append({'real': real_confidence, 'fake': fake_confidence})
 
-    return face_img, confidence_face*100, {'real': real_confidence, 'fake': fake_confidence}
+    print(f'Inference completed! {y_preds}')
+
+    return face_img, confidence_face, *results
 
 
 if __name__ == '__main__':
@@ -51,7 +73,8 @@ if __name__ == '__main__':
                          outputs=[
                              gr.outputs.Image(label='Detected Face'),
                              gr.outputs.Label(label='Face detection confidence'),
-                             gr.outputs.Label(num_top_classes=2, label='Fake/Real confidences')
+                             gr.outputs.Label(num_top_classes=2, label='EFB0'),
+                             gr.outputs.Label(num_top_classes=2, label='EFB4')
                          ],
                          examples=[
                              ['examples/fake.jpg', 'Xception'],

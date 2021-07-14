@@ -4,9 +4,9 @@ from torch import nn
 
 
 class DFDCSmallModels(pl.LightningModule):
-    def __init__(self):
+    def __init__(self, model_name):
         super().__init__()
-        self.model_name = 'tf_efficientnet_b0_ns'
+        self.model_name = model_name
         self.model = timm.create_model(self.model_name)
         n_features = self.model.classifier.in_features
         self.model.classifier = nn.Sequential(nn.Dropout(0.3), nn.Linear(n_features, 2))
