@@ -1,3 +1,5 @@
+import random
+
 import numpy as np
 import gradio as gr
 import torch
@@ -16,7 +18,7 @@ torch.manual_seed(1)
 if torch.cuda.is_available():
     torch.cuda.manual_seed_all(1)
 
-mtcnn = MTCNN(**config.FACE_DETECTOR_KWARGS)
+# mtcnn = MTCNN(**config.FACE_DETECTOR_KWARGS)
 print('Face detector initialized!')
 
 transform = get_transformer('test', size=224)
@@ -39,12 +41,12 @@ model_metadatas = {
 
 models = {}
 print('Initializing models', end='...')
-for name, (path, run_name) in model_metadatas.items():
-    model = DFDCSmallModels(run_name)
-    checkpoint = torch.load(path)
-    model.load_state_dict(checkpoint['state_dict'])
-    model.eval()
-    models[name] = model
+# for name, (path, run_name) in model_metadatas.items():
+#     model = DFDCSmallModels(run_name)
+#     checkpoint = torch.load(path)
+#     model.load_state_dict(checkpoint['state_dict'])
+#     model.eval()
+#     models[name] = model
 print('DONE!')
 
 
@@ -66,9 +68,20 @@ def get_face(in_image):
     return face_img, normalized_image['image'].unsqueeze(0), confidence_face
 
 
+def mocked_process_iamge(image, *args):
+    face_img = image
+    confidence_face = random.randint(0, 101)
+    results = []
+
+    for _ in range(8):
+        fake = random.randint(0, 101)/100
+        results.append({'fake': fake, 'real': 1 - fake})
+    return face_img, confidence_face, *results[:2]
+
+
 @timeit
 def process_image(image, *args):
-    print(f"Starting processing. {model_name} model was chosen.")
+    print(f"Starting processing.")
     face_img, normalized_image, confidence_face = get_face(image)
 
     results = []
@@ -83,7 +96,7 @@ def process_image(image, *args):
 
 
 if __name__ == '__main__':
-    iface = gr.Interface(process_image,
+    iface = gr.Interface(mocked_process_iamge,
                          inputs=[
                              gr.inputs.Image(type='pil', label='Input Image'),
                              gr.inputs.Slider(label='Slider 1'),
