@@ -1,6 +1,7 @@
 import numpy as np
 import gradio as gr
 import torch
+import codecs
 
 import config
 from facenet_pytorch.models.mtcnn import MTCNN
@@ -16,51 +17,69 @@ if torch.cuda.is_available():
     torch.cuda.manual_seed_all(1)
 
 mtcnn = MTCNN(**config.FACE_DETECTOR_KWARGS)
+print('Face detector initialized!')
+
 transform = get_transformer('test', size=224)
 
-# model1 = DFDCSmallModels('tf_efficientnet_b0_ns').load_from_checkpoint(
-#     'models/model=tf_efficientnet_b0_ns-run_id=c3x0rzgt-epoch=03-val_loss=0.3987.ckpt')
-# model1.eval()
+models_root = 'models'
+model_metadatas = {
+    'EfficientNet-B0': (
+        'models/model=tf_efficientnet_b0_ns-run_id=c3x0rzgt-epoch=03-val_loss=0.3987.ckpt', 'tf_efficientnet_b0_ns'),
+    'EfficientNet-B4': (
+        'models/model=tf_efficientnet_b4_ns-run_id=2u1txf0a-epoch=02-val_loss=0.3715.ckpt', 'tf_efficientnet_b4_ns'),
+    'Xception': ('models/model=xception-run_id=4jnbnk3u-epoch=01-val_loss=0.4701.ckpt', 'xception'),
+    'Inception-V4': ('models/model=inception_v4-run_id=djinh5d4-epoch=04-val_loss=0.4442.ckpt', 'inception_v4'),
+    'Inception-Resnet-V2': (
+        'models/model=inception_resnet_v2-run_id=ay5l7q3q-epoch=01-val_loss=0.4274.ckpt', 'inception_resnet_v2'),
+    'MobileNet-V3': (
+        'models/model=mobilenetv3_large_100-run_id=6ihp9jw7-epoch=05-val_loss=0.4229.ckpt', 'mobilenetv3_large_100'),
+    'ResNet50': ('models/model=resnet50-run_id=np7d6t9p-epoch=04-val_loss=0.4705.ckpt', 'resnet50'),
+    'DenseNet161': ('models/model=densenet161-run_id=v2cq0a1n-epoch=01-val_loss=0.3785.ckpt', 'densenet161')
+}
 
-model1 = DFDCSmallModels('tf_efficientnet_b0_ns')
-checkpoint = torch.load('models/model=tf_efficientnet_b0_ns-run_id=c3x0rzgt-epoch=03-val_loss=0.3987.ckpt')
-print(checkpoint.keys())
-model1.load_state_dict(checkpoint['state_dict'])
-model1.eval()
-
-model2 = DFDCSmallModels('tf_efficientnet_b4_ns')
-checkpoint = torch.load('models/model=tf_efficientnet_b4_ns-run_id=2u1txf0a-epoch=02-val_loss=0.3715.ckpt')
-model2.load_state_dict(checkpoint['state_dict'])
-model2.eval()
-
-# model2 = DFDCSmallModels('tf_efficientnet_b4_ns').load_from_checkpoint(
-#     'models/model=tf_efficientnet_b4_ns-run_id=2u1txf0a-epoch=02-val_loss=0.3715.ckpt'
-# )
-# model2.eval()
+models = {}
+print('Initializing models', end='...')
+for name, (path, run_name) in model_metadatas.items():
+    model = DFDCSmallModels(run_name)
+    checkpoint = torch.load(path)
+    model.load_state_dict(checkpoint['state_dict'])
+    model.eval()
+    models[name] = model
+print('DONE!')
 
 
-@timeit
-def process_image(image, model_name):
-    print(f"Starting processing. {model_name} model was chosen.")
+def get_face(in_image):
+    """
+        Detects face from the input image and returns only first face
+        - face-only image
+        - resized, padded, normalized input image
+        - face detection confidence
+    """
 
-    boxes, probabilities = mtcnn.detect(image)
-    confidence_face = round(probabilities.astype('float')[0] *100, 2)
+    boxes, probabilities = mtcnn.detect(in_image)
+    confidence_face = round(probabilities.astype('float')[0] * 100, 2)
     print(f'{len(boxes)} face(s) were detected with {confidence_face} probability.')
-
-    face_img = extract_box(image, boxes[0])
+    face_img = extract_box(in_image, boxes[0])
     normalized_image = transform(image=np.array(face_img))
     print(f'Face extraction is done!')
 
+    return face_img, normalized_image['image'].unsqueeze(0), confidence_face
+
+
+@timeit
+def process_image(image, model_name, *args):
+    print(f"Starting processing. {model_name} model was chosen.")
+    face_img, normalized_image, confidence_face = get_face(image)
+
     results = []
-    for model in [model1, model2]:
-        y_preds = model.forward(normalized_image['image'].unsqueeze(0))
+    for model_name, model in models.items():
+        y_preds = model.forward(normalized_image)
         confidence = torch.softmax(y_preds, dim=1)
         real_confidence, fake_confidence = np.round(confidence.cpu().detach().numpy().squeeze().astype('float'), 2)
         results.append({'real': real_confidence, 'fake': fake_confidence})
+    print(f'Inference completed!')
 
-    print(f'Inference completed! {y_preds}')
-
-    return face_img, confidence_face, *results
+    return face_img, confidence_face, *results[:2]  # codecs.open('custom.html', 'r').read() - this is how you read html
 
 
 if __name__ == '__main__':
@@ -68,7 +87,10 @@ if __name__ == '__main__':
                          inputs=[
                              gr.inputs.Image(type='pil', label='Input Image'),
                              gr.inputs.Dropdown(
-                                 choices=['Xception', 'EfficientNet-B0', 'EfficientNet-B4'], type='value')
+                                 choices=['Xception', 'EfficientNet-B0', 'EfficientNet-B4'], type='value'),
+                             gr.inputs.Slider(label='Slider 1'),
+                             gr.inputs.Slider(label='Slider 2'),
+                             gr.inputs.Slider(label='Slider 3'),
                          ],
                          outputs=[
                              gr.outputs.Image(label='Detected Face'),
