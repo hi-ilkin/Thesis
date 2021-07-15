@@ -4,7 +4,6 @@ import numpy as np
 import gradio as gr
 import pandas as pd
 import torch
-import codecs
 import config
 from facenet_pytorch.models.mtcnn import MTCNN
 from demo_application.demo_models import DFDCSmallModels
@@ -93,6 +92,8 @@ def mocked_process_image(image, *weights):
     df.insert(0, column='models', value=model_metadatas.keys())
 
     f, r = np.mean(df[['fake', 'real']].mul(weights, axis=0))
+    f = f / (f+r)
+    r = 1 - f
     weighted_overall_results = {'fake': f, 'real': r}
 
     return face_img, confidence_face, df, weighted_overall_results
@@ -115,9 +116,11 @@ def process_image(image, *weights):
     df.insert(0, column='models', value=model_metadatas.keys())
 
     f, r = np.mean(df[['fake', 'real']].mul(weights, axis=0))
+    f = f / (f + r)
+    r = 1 - f
     weighted_overall_results = {'fake': f, 'real': r}
 
-    return face_img, confidence_face, df, weighted_overall_results  # codecs.open('custom.html', 'r').read() - this is how you read html
+    return face_img, confidence_face, df, weighted_overall_results
 
 
 if __name__ == '__main__':
@@ -137,6 +140,7 @@ if __name__ == '__main__':
                              gr.outputs.Dataframe(label='Results', type='pandas', headers=['models,fake,real']),
                              gr.outputs.Label(num_top_classes=2, label='Weighted Results')
                          ],
+                         css="""custom.css""",
                          # examples='examples', - looks upgly, better upload
                          title='DeepFake Face Detection Demo')
     iface.launch(debug=True)
