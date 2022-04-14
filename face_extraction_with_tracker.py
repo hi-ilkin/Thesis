@@ -14,8 +14,8 @@ from facenet_pytorch.models.mtcnn import MTCNN
 
 mtcnn = MTCNN(**config.FACE_DETECTOR_KWARGS)
 iou_threshold = 0.75
-output_path = f'{config.root}/tracked_videos_val'
-root_video_path = f'{config.root}/videos_validation'
+tracked_faces_output = f'{config.root}/Celeb-DF-v2/tracked'
+root_video_path = f'{config.root}/Celeb-DF-v2'
 
 
 def get_resized_frames(p):
@@ -132,15 +132,15 @@ def extract_faces(tracking_data, video_name, frames=None, threshold=50, sample_c
 
 @timeit
 def main():
-    video_paths = glob.glob(f'{root_video_path}/*.mp4')
-    os.makedirs(output_path, exist_ok=True)
+    video_paths = glob.glob(f'{root_video_path}/*/*.mp4')
+    os.makedirs(tracked_faces_output, exist_ok=True)
 
     def _loop():
         frames = get_resized_frames(vp)
         tracked_faces = detect_and_track(frames)
         video_name = os.path.basename(vp)
 
-        with open(f'{output_path}/{video_name}.pkl', 'wb') as fp:
+        with open(f'{tracked_faces_output}/{video_name}.pkl', 'wb') as fp:
             pickle.dump(tracked_faces, fp)
         extract_faces(tracked_faces, video_name=video_name, frames=frames)
 

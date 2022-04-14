@@ -150,7 +150,11 @@ class DFDCModels(pl.LightningModule):
 
     def log_video_based_metrics(self, df):
         # using simple averaging per video
-        df['video_name'] = df['paths'].apply(lambda row: os.path.basename(row).split('_')[0])
+        # video name extraction for dfdc
+        # df['video_name'] = df['paths'].apply(lambda row: os.path.basename(row).split('_')[0])
+        # video name extraction for celeb-df dataset
+        df['video_name'] = df['paths'].apply(lambda row: '_'.join(os.path.basename(row).split('_')[:-1]))
+
         df = df.groupby('video_name').mean().reset_index()
         targets = df['targets'].to_list()
 
@@ -188,7 +192,7 @@ class DFDCModels(pl.LightningModule):
             test_outputs = pd.DataFrame({'paths': paths, 'preds': preds, 'targets': targets,
                                          'confidence_0': conf_0, 'confidence_1': conf_1})
             test_outputs.to_csv(
-                f'{path_config.TEST_IMG_OUTPUT}/{self.config.project}_{self.config.run_name}_{self.config.run_id}.csv',
+                f'{path_config.TEST_IMG_OUTPUT}/{self.config.project}_{self.config.run_name}_{self.config.run_id}_celeb.csv',
                 index=False)
             self.log_video_based_metrics(test_outputs)
 

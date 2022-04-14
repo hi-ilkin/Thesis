@@ -10,12 +10,11 @@ from utils import run_in_parallel, timeit
 
 train_output_path = config.root + "/train_images/"
 valid_output_path = config.root + "/val_images/"
+test_output_path = config.root + "/test_images/"
 
-if not os.path.exists(train_output_path):
-    os.mkdir(train_output_path)
-
-if not os.path.exists(valid_output_path):
-    os.mkdir(valid_output_path)
+for _p in [train_output_path, valid_output_path, test_output_path]:
+    if not os.path.exists(_p):
+        os.mkdir(_p)
 
 
 @timeit
@@ -28,8 +27,10 @@ def save_img(img, label, chunk, idx, type='train'):
     img_name = f"{chunk}_{idx}.png"
     if type == 'train':
         img.save(f'{train_output_path}/{img_name}')
-    else:
+    elif type == 'valid':
         img.save(f'{valid_output_path}/{img_name}')
+    else:
+        img.save(f'{test_output_path}/{img_name}')
     return img_name, label
 
 
@@ -53,7 +54,10 @@ def process_chunks(chunk_paths, label_path, mode):
 
 
 if __name__ == '__main__':
-    chunks = glob.glob(config.CHUNK_PATH)
-    val_chunk = chunks.pop()
-    process_chunks(chunks, config.root + '/train_labels.csv', mode='train')
-    process_chunks([val_chunk], config.root + '/val_labels.csv', mode='val')
+
+    test_ids = list(range(41, 50))
+    chunks = [os.path.join(os.path.dirname(config.CHUNK_PATH), f'chunk_{t}.npz') for t in test_ids]
+    print(chunks)
+    # val_chunk = chunks.pop()
+    process_chunks(chunks, config.root + '/test_labels.csv', mode='test')
+    #process_chunks([val_chunk], config.root + '/val_labels.csv', mode='val')

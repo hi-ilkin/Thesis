@@ -14,22 +14,22 @@ use_chunks:
 
 # training configuration
 project:
-  value: DFDC-phase-7
+  value: DFDC-phase-7-celeb-test
 model_name:
   desc: timm model name
-  value: xception
+  value: tf_efficientnet_b5_ns
 run_name:
   desc: name displayed at wandb
-  value: s1_xception-small
+  value: s69_incpv4_default_high
 notes:
   desc: Add run specific notes here. Don't forget to delete when starting new run
-  value: phase 7
+  value: Testing only inception_V4
 resume_from:
   desc: checkpoint to continue from. None if you want start from scracth
   value: None
 epochs:
   desc: Number of epochs to train. Should be chunk size * epoch if chunks used
-  value: 2
+  value: 10
 target_size:
   desc: Output size
   value: 2
@@ -91,11 +91,11 @@ lr_tmult:
 
 ## LROnPlateau specific
 lr_factor:
-  value: 0.1
+  value: 0.5
 lr_patience:
   value: 2
 lr_threshold:
-  value: 0.01
+  value: 0.5
 
 # other
 val_freq:

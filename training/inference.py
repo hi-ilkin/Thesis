@@ -20,30 +20,30 @@ def headlines():
         data = yaml.load(file, Loader=yaml.FullLoader)
         return data['project']['value'], data['run_name']['value']
 
+runs = {
+    'oq5sbbte': ('model=inception_v4-run_id=oq5sbbte-epoch=04-val_loss=0.4404.ckpt', 'inception_v4')
+}
+
 
 def main():
     project, name = headlines()
 
-    runs = {
-        "1llb9qpj": ("tf_efficientnet_b0_ns-1llb9qpj-epoch=03-val_loss=0.0168.ckpt", "tf_efficientnet_b0"),
-        "5qis6ixz": ("efb0-ns-epoch=02-val_loss=0.0237.ckpt", "tf_efficientnet_b0_ns"),
-        "b9nqa6xq": ("efb0-v1-epoch=03-val_loss=0.0115.ckpt", "tf_efficientnet_b0_ns")
-        # "aa8dkthj": "model=densenet121-run_id=aa8dkthj-epoch=00-val_loss=0.0891.ckpt"
-    }
-
     fitted = False
     for run_id, (ckpt_name, model_name) in runs.items():
-        wandb_logger = WandbLogger(project=project, id=run_id, reinit=True)
+        print(f'{run_id}: {ckpt_name}')
+        wandb_logger = WandbLogger(project=project, id=run_id, name=f'{model_name}_{run_id}', reinit=True,
+                                   mode='offline')
 
         params = wandb_logger.experiment.config
         trainer = Trainer(
             gpus=params.gpus,
             precision=params.precision,
-            max_epochs=0
+            max_epochs=0,
+            deterministic=True
         )
         p = os.path.join(config.CHECKPOINT_PATH, ckpt_name)
 
-        params.update({"model_name": model_name}, allow_val_change=True)
+        params.update({"model_name": model_name, 'run_id': run_id}, allow_val_change=True)
         dataset = DFDCLightningDataset(params)
         model = DFDCModels(params)
         trainer.fit(model, dataset)
@@ -51,6 +51,7 @@ def main():
         print(f"{p} : {os.path.exists(p)}")
         trainer.test(ckpt_path=p)
         wandb.finish()
+        print('=-' * 50, end='\n\n')
 
 
 if __name__ == '__main__':
